@@ -4,10 +4,6 @@
  */
 package views;
 
-/**
- *
- * @author User
- */
 public class MenuPrincipal extends javax.swing.JFrame {
 
     /**
@@ -26,21 +22,95 @@ public class MenuPrincipal extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jLabel1 = new javax.swing.JLabel();
+        jbtnAgendar = new javax.swing.JButton();
+        jbtnRecepcion = new javax.swing.JButton();
+        jbtnSalir = new javax.swing.JButton();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("SmartMed - Menú Principal");
+
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 3, 17)); // NOI18N
+        jLabel1.setText("SISTEMA DE CITAS - CONSULTORIO MÉDICO");
+
+        jbtnAgendar.setText("1. Agendar Nueva Cita");
+        jbtnAgendar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnAgendarActionPerformed(evt);
+            }
+        });
+
+        jbtnRecepcion.setText("2. Ventanilla de Recepción");
+        jbtnRecepcion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnRecepcionActionPerformed(evt);
+            }
+        });
+
+        jbtnSalir.setText("3. Salir");
+        jbtnSalir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnSalirActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(16, 16, 16)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 369, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(118, 118, 118)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jbtnRecepcion, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jbtnSalir, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jbtnAgendar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(19, 19, 19)
+                .addComponent(jLabel1)
+                .addGap(36, 36, 36)
+                .addComponent(jbtnAgendar)
+                .addGap(18, 18, 18)
+                .addComponent(jbtnRecepcion)
+                .addGap(18, 18, 18)
+                .addComponent(jbtnSalir)
+                .addContainerGap(116, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void jbtnAgendarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnAgendarActionPerformed
+        // TODO add your handling code here:
+        Agendamiento ventanaAgendar = new Agendamiento();
+        ventanaAgendar.setVisible(true);
+        this.dispose(); // Cierra el menú principal mientras estás en agendamiento
+
+    }//GEN-LAST:event_jbtnAgendarActionPerformed
+
+    private void jbtnRecepcionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnRecepcionActionPerformed
+        // TODO add your handling code here:
+        Recepcion ventanaRecepcion = new Recepcion();
+        ventanaRecepcion.setVisible(true);
+        this.dispose(); // Cierra el menú principal
+    }//GEN-LAST:event_jbtnRecepcionActionPerformed
+
+    private void jbtnSalirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnSalirActionPerformed
+        // TODO add your handling code here:
+        int confirmacion = javax.swing.JOptionPane.showConfirmDialog(this,
+                "¿Desea salir del sistema?", "Salir", javax.swing.JOptionPane.YES_NO_OPTION);
+        if (confirmacion == javax.swing.JOptionPane.YES_OPTION) {
+            System.exit(0); // Cierra completamente la aplicación
+        }
+    }//GEN-LAST:event_jbtnSalirActionPerformed
 
     /**
      * @param args the command line arguments
@@ -78,5 +148,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JButton jbtnAgendar;
+    private javax.swing.JButton jbtnRecepcion;
+    private javax.swing.JButton jbtnSalir;
     // End of variables declaration//GEN-END:variables
 }

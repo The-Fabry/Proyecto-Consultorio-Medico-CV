@@ -4,17 +4,73 @@
  */
 package views;
 
-/**
- *
- * @author User
- */
+import Conexion.ConexionBD;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import javax.swing.JOptionPane;
+
 public class Recepcion extends javax.swing.JFrame {
 
-    /**
-     * Creates new form Recepcion
-     */
     public Recepcion() {
         initComponents();
+        this.setLocationRelativeTo(null); // Centrar ventana
+        jtxtEscaneo.requestFocus(); // Pone el cursor parpadeando listo para el escáner
+    }
+
+    // MÉTODO PARA VALIDAR EL CÓDIGO ESCANEADO
+    private void validarAsistenciaTicket() {
+        String codigoLeido = jtxtEscaneo.getText().trim();
+
+        if (codigoLeido.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor escanee o ingrese un código.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        ConexionBD conexion = new ConexionBD();
+        Connection cn = conexion.conectar();
+
+        try {
+            // Buscar la cita por su código de barras
+            String sql = "SELECT c.id_cita, cl.nombre, cl.apellido, c.estado FROM citas c "
+                    + "JOIN clientes cl ON c.id_cliente = cl.id_cliente "
+                    + "WHERE c.codigo_barras = ?";
+
+            PreparedStatement pst = cn.prepareStatement(sql);
+            pst.setString(1, codigoLeido);
+            ResultSet rs = pst.executeQuery();
+
+            if (rs.next()) {
+                String nombrePaciente = rs.getString("nombre") + " " + rs.getString("apellido");
+                String estadoActual = rs.getString("estado");
+
+                if (estadoActual.equals("Asistió")) {
+                    JOptionPane.showMessageDialog(this, "⚠️ Este ticket ya fue utilizado anteriormente para: " + nombrePaciente, "Aviso", JOptionPane.WARNING_MESSAGE);
+                } else {
+                    // Actualizar el estado de la cita a "Asistió"
+                    String updateSql = "UPDATE citas SET estado = 'Asistió' WHERE codigo_barras = ?";
+                    PreparedStatement pstUpdate = cn.prepareStatement(updateSql);
+                    pstUpdate.setString(1, codigoLeido);
+                    pstUpdate.executeUpdate();
+                    pstUpdate.close();
+
+                    JOptionPane.showMessageDialog(this, "✅ ¡Asistencia confirmada con éxito!\nPaciente: " + nombrePaciente, "Bienvenido", JOptionPane.INFORMATION_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "❌ El código de barras no existe en el sistema.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+            rs.close();
+            pst.close();
+            cn.close();
+
+            // Limpiar campo y volver a enfocar para el siguiente escaneo
+            jtxtEscaneo.setText("");
+            jtxtEscaneo.requestFocus();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al procesar la asistencia: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -26,21 +82,104 @@ public class Recepcion extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel1 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jtxtEscaneo = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
+        jbtnVolver = new javax.swing.JButton();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("SmartMed - Recepcion");
+
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabel1.setText("CONTROL DE LLEGADA A RECEPCIÓN");
+
+        jLabel2.setText("Por favor, escanee el código del ticket:");
+
+        jtxtEscaneo.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jtxtEscaneoKeyPressed(evt);
+            }
+        });
+
+        jLabel3.setText("Esperando lectura de código...");
+
+        jbtnVolver.setText("Volver al Menu");
+        jbtnVolver.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnVolverActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(64, Short.MAX_VALUE)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 310, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(26, 26, 26))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jtxtEscaneo, javax.swing.GroupLayout.PREFERRED_SIZE, 282, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 215, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(90, 90, 90))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(71, 71, 71))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(105, 105, 105)
+                .addComponent(jbtnVolver, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(23, 23, 23)
+                .addComponent(jLabel1)
+                .addGap(26, 26, 26)
+                .addComponent(jLabel2)
+                .addGap(18, 18, 18)
+                .addComponent(jtxtEscaneo, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(27, 27, 27)
+                .addComponent(jLabel3)
+                .addGap(32, 32, 32)
+                .addComponent(jbtnVolver)
+                .addContainerGap(35, Short.MAX_VALUE))
+        );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void jtxtEscaneoKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtxtEscaneoKeyPressed
+        // TODO add your handling code here:
+        if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+            validarAsistenciaTicket();
+        }
+    }//GEN-LAST:event_jtxtEscaneoKeyPressed
+
+    private void jbtnVolverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnVolverActionPerformed
+        // TODO add your handling code here:
+        MenuPrincipal menu = new MenuPrincipal();
+        menu.setVisible(true);
+        this.dispose();
+    }//GEN-LAST:event_jbtnVolverActionPerformed
 
     /**
      * @param args the command line arguments
@@ -78,5 +217,11 @@ public class Recepcion extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JButton jbtnVolver;
+    private javax.swing.JTextField jtxtEscaneo;
     // End of variables declaration//GEN-END:variables
 }
