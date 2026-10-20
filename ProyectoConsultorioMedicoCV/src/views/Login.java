@@ -5,10 +5,10 @@
 package views;
 
 import Conexion.ConexionBD;
+import javax.swing.JOptionPane;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import javax.swing.JOptionPane;
 
 public class Login extends javax.swing.JFrame {
 
@@ -17,49 +17,89 @@ public class Login extends javax.swing.JFrame {
         this.setLocationRelativeTo(null); // Centrar la ventana en la pantalla
     }
 
-    // MÉTODO PRIVADO PARA VALIDAR EL ACCESO
-    private void validarAcceso() {
-        // Nota: Asegúrate de que los nombres de tus cajas de texto en Login 
-        // sean jtxtUsuario y jtxtContraseña (o jtxtPassword según tu diseño)
+    // 1. MÉTODO PARA VALIDAR CAMPOS VACÍOS
+    private boolean validarCamposVacios(String usuario, String password) {
+        if (usuario.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    // 2. MÉTODO LIMPIO PARA CONSULTAR LA BD (Usa tu método 'conectar()')
+    private String consultarRolEnBaseDeDatos(String usuario, String password) {
+        String rolEncontrado = null;
+        String sql = "SELECT rol FROM usuarios WHERE usuario = ? AND password = ?";
+
+        // Creamos la instancia de ConexionBD para usar el método 'conectar()'
+        ConexionBD conexionBD = new ConexionBD();
+
+        try {
+            Connection con = conexionBD.conectar(); // <--- Aquí llamamos a tu método conectar()
+            if (con != null) {
+                try (PreparedStatement ps = con.prepareStatement(sql)) {
+                    ps.setString(1, usuario);
+                    ps.setString(2, password);
+
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            rolEncontrado = rs.getString("rol");
+                        }
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo establecer conexión con la base de datos.", "Error de Conexión", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error SQL: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        return rolEncontrado;
+    }
+
+    // 3. REDIRECCIÓN A LAS VISTAS SEGÚN EL ROL
+    private void abrirVistaPorRol(String rol) {
+        switch (rol.toLowerCase().trim()) {
+            case "paciente":
+                new VistaPaciente().setVisible(true);
+                break;
+
+            case "medico":
+                new VistaMedico().setVisible(true);
+                break;
+
+            case "recepcion":
+            case "recepcionista":
+                new VistaRecepcion().setVisible(true);
+                break;
+
+            default:
+                JOptionPane.showMessageDialog(this, "El rol del usuario (" + rol + ") no es reconocido en el sistema.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+        }
+        // Cierra la ventana de Login al ingresar
+        this.dispose();
+    }
+
+    // 4. LÓGICA PRINCIPAL DE PROCESAMIENTO
+    private void procesarLogin() {
         String usuario = jtxtUsuario.getText().trim();
         String password = new String(jtxtContraseña.getPassword()).trim();
 
-        if (usuario.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor ingrese usuario y contraseña.", "Campos vacíos", JOptionPane.WARNING_MESSAGE);
+        if (!validarCamposVacios(usuario, password)) {
             return;
         }
 
-        ConexionBD conexion = new ConexionBD();
-        Connection cn = conexion.conectar();
+        String rol = consultarRolEnBaseDeDatos(usuario, password);
 
-        try {
-            // Consultar en la base de datos si el usuario y contraseña coinciden
-            String sql = "SELECT * FROM usuarios WHERE usuario = ? AND password = ?";
-            PreparedStatement pst = cn.prepareStatement(sql);
-            pst.setString(1, usuario);
-            pst.setString(2, password);
-            ResultSet rs = pst.executeQuery();
-
-            if (rs.next()) {
-                JOptionPane.showMessageDialog(this, "¡Bienvenido al sistema, " + usuario + "!", "Acceso Concedido", JOptionPane.INFORMATION_MESSAGE);
-
-                // Abrir el Menú Principal
-                MenuPrincipal menu = new MenuPrincipal();
-                menu.setVisible(true);
-                this.dispose(); // Cierra la ventana de login
-            } else {
-                JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.", "Error de Autenticación", JOptionPane.ERROR_MESSAGE);
-                jtxtContraseña.setText(""); // Limpiar contraseña por seguridad
-            }
-
-            rs.close();
-            pst.close();
-            cn.close();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al conectar con la base de datos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        if (rol != null) {
+            abrirVistaPorRol(rol);
+        } else {
+            JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.", "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
         }
     }
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -156,7 +196,7 @@ public class Login extends javax.swing.JFrame {
 
     private void jbtnIngresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnIngresarActionPerformed
         // TODO add your handling code here:
-        validarAcceso();
+        procesarLogin();
     }//GEN-LAST:event_jbtnIngresarActionPerformed
 
     /**

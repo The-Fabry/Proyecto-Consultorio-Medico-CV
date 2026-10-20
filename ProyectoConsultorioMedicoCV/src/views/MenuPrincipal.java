@@ -90,7 +90,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     private void jbtnAgendarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnAgendarActionPerformed
         // TODO add your handling code here:
-        Agendamiento ventanaAgendar = new Agendamiento();
+        VistaPaciente ventanaAgendar = new VistaPaciente();
         ventanaAgendar.setVisible(true);
         this.dispose(); // Cierra el menú principal mientras estás en agendamiento
 
@@ -98,7 +98,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     private void jbtnRecepcionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnRecepcionActionPerformed
         // TODO add your handling code here:
-        Recepcion ventanaRecepcion = new Recepcion();
+        VistaRecepcion ventanaRecepcion = new VistaRecepcion();
         ventanaRecepcion.setVisible(true);
         this.dispose(); // Cierra el menú principal
     }//GEN-LAST:event_jbtnRecepcionActionPerformed
