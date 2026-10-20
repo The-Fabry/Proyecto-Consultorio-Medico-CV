@@ -4,10 +4,24 @@
  */
 package model;
 
-/**
- *
- * @author User
- */
 public class Especialista {
-    
+    private int idEspecialista;
+    private String nombreCompleto;
+    private String especialidad;
+
+    public Especialista(int idEspecialista, String nombreCompleto, String especialidad) {
+        this.idEspecialista = idEspecialista;
+        this.nombreCompleto = nombreCompleto;
+        this.especialidad = especialidad;
+    }
+
+    public int getIdEspecialista() { return idEspecialista; }
+    public String getNombreCompleto() { return nombreCompleto; }
+    public String getEspecialidad() { return especialidad; }
+
+    // Esto es vital para que el JComboBox muestre el nombre del médico y no códigos raros
+    @Override
+    public String toString() {
+        return nombreCompleto + " (" + especialidad + ")";
+    }
 }
