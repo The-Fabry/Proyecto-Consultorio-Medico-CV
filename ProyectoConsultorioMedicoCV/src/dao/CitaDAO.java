@@ -40,23 +40,99 @@ public class CitaDAO {
         return lista;
     }
 
+    // Buscar la cédula asociada al usuario logueado en la tabla 'usuarios'
+    public String obtenerCedulaPorUsuario(String nombreUsuario) {
+        String cedula = null;
+        ConexionBD cc = new ConexionBD();
+        Connection cn = cc.conectar();
+        String sql = "SELECT cedula FROM usuarios WHERE usuario = ?";
+        
+        try {
+            PreparedStatement pst = cn.prepareStatement(sql);
+            pst.setString(1, nombreUsuario);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) {
+                cedula = rs.getString("cedula");
+            }
+            rs.close();
+            pst.close();
+            cn.close();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al consultar usuario: " + e.getMessage());
+        }
+        return cedula;
+    }
+
+    // Buscar nombre y teléfono del cliente por cédula
+    public String[] buscarClientePorCedula(String cedula) {
+        String[] datos = null;
+        ConexionBD cc = new ConexionBD();
+        Connection cn = cc.conectar();
+        String sql = "SELECT nombre, telefono FROM clientes WHERE cedula = ?";
+        
+        try {
+            PreparedStatement pst = cn.prepareStatement(sql);
+            pst.setString(1, cedula);
+            ResultSet rs = pst.executeQuery();
+            
+            if (rs.next()) {
+                datos = new String[2];
+                datos[0] = rs.getString("nombre");
+                datos[1] = rs.getString("telefono");
+            }
+            
+            rs.close();
+            pst.close();
+            cn.close();
+        } catch (SQLException e) {
+            // Manejo silencioso
+        }
+        return datos;
+    }
+
+    // ⭐ Valida si el especialista ya tiene una cita ocupada en la fecha y hora exacta
+    public boolean existeCita(int idEspecialista, String fechaHora) {
+        boolean existe = false;
+        ConexionBD cc = new ConexionBD();
+        Connection cn = cc.conectar();
+        String sql = "SELECT COUNT(*) FROM citas WHERE id_especialista = ? AND fecha_cita = ?";
+        
+        try {
+            PreparedStatement pst = cn.prepareStatement(sql);
+            pst.setInt(1, idEspecialista);
+            pst.setString(2, fechaHora);
+            ResultSet rs = pst.executeQuery();
+            
+            if (rs.next()) {
+                if (rs.getInt(1) > 0) {
+                    existe = true; // El horario ya está ocupado
+                }
+            }
+            
+            rs.close();
+            pst.close();
+            cn.close();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al verificar la disponibilidad: " + e.getMessage());
+        }
+        return existe;
+    }
+
     // Método para registrar la cita y el cliente en la BD
-    public boolean guardarCita(String cedula, String nombre, String apellido, String telefono, int idEspecialista, String fechaHora, String codigoBarras) {
+    public boolean guardarCita(String cedula, String nombre, String telefono, int idEspecialista, String fechaHora, String codigoBarras) {
         ConexionBD cc = new ConexionBD();
         Connection cn = cc.conectar();
         
         try {
-            // 1. Insertar o actualizar cliente
-            String sqlCliente = "INSERT INTO clientes (cedula, nombre, apellido, telefono) VALUES (?, ?, ?, ?) " +
-                                "ON DUPLICATE KEY UPDATE nombre=?, apellido=?, telefono=?";
+            // Insertar o actualizar cliente
+            String sqlCliente = "INSERT INTO clientes (cedula, nombre, telefono) VALUES (?, ?, ?) " +
+                                "ON DUPLICATE KEY UPDATE nombre=?, telefono=?";
             PreparedStatement pstCliente = cn.prepareStatement(sqlCliente, Statement.RETURN_GENERATED_KEYS);
             pstCliente.setString(1, cedula);
             pstCliente.setString(2, nombre);
-            pstCliente.setString(3, apellido);
-            pstCliente.setString(4, telefono);
-            pstCliente.setString(5, nombre);
-            pstCliente.setString(6, apellido);
-            pstCliente.setString(7, telefono);
+            pstCliente.setString(3, telefono);
+            pstCliente.setString(4, nombre);
+            pstCliente.setString(5, telefono);
             pstCliente.executeUpdate();
             
             // Obtener ID del cliente
@@ -77,7 +153,7 @@ public class CitaDAO {
             rsKeys.close();
             pstCliente.close();
 
-            // 2. Guardar la cita médica
+            // Guardar la cita médica
             String sqlCita = "INSERT INTO citas (id_cliente, id_especialista, fecha_cita, codigo_barras, estado) VALUES (?, ?, ?, ?, 'Pendiente')";
             PreparedStatement pstCita = cn.prepareStatement(sqlCita);
             pstCita.setInt(1, idCliente);
@@ -96,7 +172,7 @@ public class CitaDAO {
         }
     }
 
-    // Método para listar TODO el historial de citas de un paciente por su cédula (antiguas y nuevas)
+    // Listar todo el historial de citas de un paciente por su cédula
     public List<Object[]> listarCitasPorCedula(String cedula) {
         List<Object[]> listaCitas = new ArrayList<>();
         ConexionBD cc = new ConexionBD();

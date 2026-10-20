@@ -4,8 +4,10 @@
  */
 package views;
 
-import Conexion.ConexionBD;
+import dao.CitaDAO;
+import model.Sesion;
 import javax.swing.JOptionPane;
+import Conexion.ConexionBD;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,11 +33,10 @@ public class Login extends javax.swing.JFrame {
         String rolEncontrado = null;
         String sql = "SELECT rol FROM usuarios WHERE usuario = ? AND password = ?";
 
-        // Creamos la instancia de ConexionBD para usar el método 'conectar()'
         ConexionBD conexionBD = new ConexionBD();
 
         try {
-            Connection con = conexionBD.conectar(); // <--- Aquí llamamos a tu método conectar()
+            Connection con = conexionBD.conectar();
             if (con != null) {
                 try (PreparedStatement ps = con.prepareStatement(sql)) {
                     ps.setString(1, usuario);
@@ -58,10 +59,12 @@ public class Login extends javax.swing.JFrame {
         return rolEncontrado;
     }
 
-    // 3. REDIRECCIÓN A LAS VISTAS SEGÚN EL ROL
-    private void abrirVistaPorRol(String rol) {
+    // 3. REDIRECCIÓN A LAS VISTAS SEGÚN EL ROL (CORREGIDO CON LA SESIÓN)
+    private void abrirVistaPorRol(String usuario, String rol) {
         switch (rol.toLowerCase().trim()) {
             case "paciente":
+                // ⭐ CLAVE: Guardamos el usuario en la sesión para que VistaPaciente cargue todo en automático ⭐
+                Sesion.setUsuarioLogueado(usuario);
                 new VistaPaciente().setVisible(true);
                 break;
 
@@ -85,6 +88,7 @@ public class Login extends javax.swing.JFrame {
     // 4. LÓGICA PRINCIPAL DE PROCESAMIENTO
     private void procesarLogin() {
         String usuario = jtxtUsuario.getText().trim();
+        // Nota: Asegúrate de que el nombre de tu campo de contraseña sea jtxtPassword o jtxtContraseña según tu diseño
         String password = new String(jtxtContraseña.getPassword()).trim();
 
         if (!validarCamposVacios(usuario, password)) {
@@ -94,7 +98,8 @@ public class Login extends javax.swing.JFrame {
         String rol = consultarRolEnBaseDeDatos(usuario, password);
 
         if (rol != null) {
-            abrirVistaPorRol(rol);
+            // Pasamos también el 'usuario' para guardarlo en la sesión si es paciente
+            abrirVistaPorRol(usuario, rol);
         } else {
             JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.", "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
         }

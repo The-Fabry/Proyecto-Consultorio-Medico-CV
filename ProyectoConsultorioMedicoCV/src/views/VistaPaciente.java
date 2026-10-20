@@ -6,6 +6,7 @@ package views;
 
 import dao.CitaDAO;
 import model.Especialista;
+import model.Sesion;
 import java.util.List;
 import javax.swing.JOptionPane;
 import java.time.LocalDateTime;
@@ -17,26 +18,40 @@ public class VistaPaciente extends javax.swing.JFrame {
 
     public VistaPaciente() {
         initComponents();
-        this.setLocationRelativeTo(null); // Centra la ventana en pantalla
-        cargarEspecialistas(); // Llena el ComboBox de médicos
-        jtxtFecha.setEditable(false); // Evita que escriban manualmente la fecha
+        this.setLocationRelativeTo(null);
+        cargarEspecialistas();
+        jtxtFecha.setEditable(false);
         
-        // Cargar citas automáticamente al presionar Enter o al salir del campo cédula
-        jtxtCedula.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override
-            public void focusLost(java.awt.event.FocusEvent evt) {
-                cargarCitasEnDesplegable();
-            }
-        });
+        // Carga automática al iniciar sesión usando la clase Sesion global
+        String usuarioActual = Sesion.getUsuarioLogueado();
+        if (usuarioActual != null && !usuarioActual.trim().isEmpty()) {
+            cargarDatosDeUsuarioLogueado(usuarioActual);
+        } else {
+            JOptionPane.showMessageDialog(this, "No se detectó una sesión activa.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        }
+    }
 
-        jtxtCedula.addKeyListener(new java.awt.event.KeyAdapter() {
-            @Override
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-                    cargarCitasEnDesplegable();
-                }
+    private void cargarDatosDeUsuarioLogueado(String nombreUsuario) {
+        CitaDAO dao = new CitaDAO();
+        String cedulaEncontrada = dao.obtenerCedulaPorUsuario(nombreUsuario);
+
+        if (cedulaEncontrada != null && !cedulaEncontrada.trim().isEmpty()) {
+            jtxtCedula.setText(cedulaEncontrada);
+            jtxtCedula.setEditable(false); // Bloquea la cédula para que no se modifique
+
+            String[] datosCliente = dao.buscarClientePorCedula(cedulaEncontrada);
+            if (datosCliente != null) {
+                jtxtNombre.setText(datosCliente[0]);   
+                jtxtTelefono.setText(datosCliente[1]); 
+            } else {
+                jtxtNombre.setText("");
+                jtxtTelefono.setText("");
             }
-        });
+
+            cargarCitasEnDesplegable();
+        } else {
+            JOptionPane.showMessageDialog(this, "Este usuario no tiene una cédula asignada en la base de datos.", "Aviso", JOptionPane.WARNING_MESSAGE);
+        }
     }
 
     private void cargarEspecialistas() {
@@ -49,7 +64,6 @@ public class VistaPaciente extends javax.swing.JFrame {
         }
     }
 
-    // Selector de Fecha y Hora (6:00 AM a 8:00 PM cada 30 min, años limpios y bisiestos)
     private void abrirSelectorFechaHora() {
         LocalDateTime ahora = LocalDateTime.now();
 
@@ -67,7 +81,6 @@ public class VistaPaciente extends javax.swing.JFrame {
 
         javax.swing.JComboBox<String> cbDia = new javax.swing.JComboBox<>();
 
-        // Horario de 6:00 a 20:00 cada 30 minutos
         javax.swing.JComboBox<String> cbHorarios = new javax.swing.JComboBox<>();
         for (int hora = 6; hora <= 20; hora++) {
             cbHorarios.addItem(String.format("%02d:00", hora));
@@ -137,7 +150,6 @@ public class VistaPaciente extends javax.swing.JFrame {
         }
     }
 
-    // Carga TODAS las citas históricas del paciente en el ComboBox
     private void cargarCitasEnDesplegable() {
         String cedula = jtxtCedula.getText().trim();
         if (cedula.isEmpty()) {
@@ -158,7 +170,6 @@ public class VistaPaciente extends javax.swing.JFrame {
         }
     }
 
-    // Abre el ticket de la cita seleccionada en el desplegable
     private void verTicketSeleccionado() {
         int index = jcbxMisCitas.getSelectedIndex();
         if (listaCitasPaciente == null || listaCitasPaciente.isEmpty() || index < 0) {
@@ -179,7 +190,6 @@ public class VistaPaciente extends javax.swing.JFrame {
         ticket.setVisible(true);
     }
 
-    // Guardar nueva cita y actualizar el desplegable automáticamente
     private void guardarCitaRegistrada() {
         String cedula = jtxtCedula.getText().trim();
         String nombre = jtxtNombre.getText().trim();
@@ -209,12 +219,28 @@ public class VistaPaciente extends javax.swing.JFrame {
         int idEspecialistaReal = espSeleccionado.getIdEspecialista();
         String nombreMedicoTexto = espSeleccionado.getNombreCompleto() + " - " + espSeleccionado.getEspecialidad();
 
+        // ⭐ VALIDACIÓN: Comprueba si el médico ya tiene la cita ocupada en esa fecha y hora
+        if (dao.existeCita(idEspecialistaReal, fechaHora)) {
+            JOptionPane.showMessageDialog(this, 
+                "Lo sentimos, el especialista seleccionado ya tiene una cita reservada en esta misma fecha y hora.\nPor favor elija otro horario.", 
+                "Horario No Disponible", 
+                JOptionPane.WARNING_MESSAGE);
+            return; 
+        }
+
         String codigoBarras = "CITA-" + cedula + "-" + (System.currentTimeMillis() % 10000);
 
-        boolean exito = dao.guardarCita(cedula, nombre, "Sin Apellido", telefono, idEspecialistaReal, fechaHora, codigoBarras);
+        boolean exito = dao.guardarCita(cedula, nombre, telefono, idEspecialistaReal, fechaHora, codigoBarras);
 
         if (exito) {
             JOptionPane.showMessageDialog(this, "¡Cita agendada con éxito!\nCódigo de ticket: " + codigoBarras, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            
+            // Asegura que los datos recién guardados aparezcan fijos y cargados
+            String[] datosCliente = dao.buscarClientePorCedula(cedula);
+            if (datosCliente != null) {
+                jtxtNombre.setText(datosCliente[0]);
+                jtxtTelefono.setText(datosCliente[1]);
+            }
             
             cargarCitasEnDesplegable();
 
