@@ -5,7 +5,6 @@ import dao.CitaDAO;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.GridLayout;
 import java.sql.SQLException;
 import java.util.List;
@@ -23,42 +22,34 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
+// Modulo de Nando: se integra dentro de VistaMedico.
 public class PanelHistorialMedico extends JPanel {
 
-    // CONEXION A LOS METODOS DEL DAO
     private final CitaDAO dao = new CitaDAO();
 
-    // COMPONENTES DE BUSQUEDA
-    private final JTextField txtCedula =
-            new JTextField(15);
+    private final JTextField txtCedula = new JTextField(13);
 
-    private final JLabel lblPaciente = new JLabel("-");
     private final JLabel lblCedula = new JLabel("-");
-    private final JLabel lblUltimaConsulta =
-            new JLabel("-");
+    private final JLabel lblPaciente = new JLabel("-");
+    private final JLabel lblUltimaConsulta = new JLabel("-");
 
-    // COMPONENTES DE HISTORIAL
-    private final JComboBox<CitaOpcion> cmbCitas =
+    private final JComboBox<CitaItem> cmbCitas =
             new JComboBox<>();
 
     private final JTextArea txtDiagnostico =
-            new JTextArea(3, 30);
+            new JTextArea(3, 20);
 
     private final JTextArea txtNotas =
-            new JTextArea(3, 30);
+            new JTextArea(3, 20);
 
     private final JButton btnGuardar =
-            new JButton("Guardar Diagnostico y Notas");
+            new JButton("Guardar diagnostico y notas");
 
-    // MODELO DE LA TABLA
-    private final DefaultTableModel modeloHistorial =
+    private final DefaultTableModel modelo =
         new DefaultTableModel(
-            new String[]{
-                "Cita #",
-                "Fecha/Hora",
-                "Medico",
-                "Diagnostico",
-                "Notas"
+            new Object[]{
+                "Cita", "Fecha", "Medico",
+                "Diagnostico", "Notas"
             }, 0) {
 
             @Override
@@ -68,18 +59,18 @@ public class PanelHistorialMedico extends JPanel {
             }
         };
 
-    private final JTable tblHistorial =
-            new JTable(modeloHistorial);
+    private final JTable tblHistorial = new JTable(modelo);
 
-    private String cedulaBuscada = null;
+    private String cedulaActual = null;
+    private boolean cargando = false;
 
-    // CLASE PARA REPRESENTAR UNA CITA
-    private static class CitaOpcion {
+    // Clase auxiliar para las citas
+    private static class CitaItem {
 
         final int id;
         final String descripcion;
 
-        CitaOpcion(int id, String descripcion) {
+        CitaItem(int id, String descripcion) {
             this.id = id;
             this.descripcion = descripcion;
         }
@@ -90,53 +81,48 @@ public class PanelHistorialMedico extends JPanel {
         }
     }
 
-    // ====================================
-    // CONSTRUCTOR
-    // ====================================
+    // Constructor
     public PanelHistorialMedico() {
-        construirPanel();
+        construirInterfaz();
         btnGuardar.setEnabled(false);
     }
 
-    // ====================================
-    // DISEÑO DE LA INTERFAZ
-    // ====================================
-    private void construirPanel() {
+    // ========================================
+    // CONSTRUCCION DE LA INTERFAZ
+    // ========================================
+    private void construirInterfaz() {
 
         setLayout(new BorderLayout(8, 8));
 
         setBorder(BorderFactory.createTitledBorder(
-            "Historial Clinico del Paciente - Nando"
+            "Historial clinico del paciente"
         ));
 
-        setPreferredSize(new Dimension(620, 620));
+        setPreferredSize(new Dimension(580, 600));
 
-        // PANEL DE BUSQUEDA
-        JPanel encabezado =
+        // PANEL SUPERIOR: BUSQUEDA
+        JPanel superior =
             new JPanel(new BorderLayout(5, 5));
 
-        JPanel buscar =
+        JPanel busqueda =
             new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        buscar.add(new JLabel("Buscar Cedula:"));
-        buscar.add(txtCedula);
-
         JButton btnBuscar =
-            new JButton("Buscar Cedula");
+            new JButton("Buscar cedula");
 
-        buscar.add(btnBuscar);
+        busqueda.add(new JLabel("Cedula:"));
+        busqueda.add(txtCedula);
+        busqueda.add(btnBuscar);
 
-        encabezado.add(
-            buscar, BorderLayout.NORTH
-        );
+        superior.add(busqueda, BorderLayout.NORTH);
 
-        // DATOS DEL PACIENTE
+        // INFORMACION DEL PACIENTE
         JPanel datos =
             new JPanel(new GridLayout(3, 2, 4, 4));
 
         datos.setBorder(
             BorderFactory.createTitledBorder(
-                "Informacion del paciente"
+                "Datos del paciente"
             )
         );
 
@@ -146,65 +132,62 @@ public class PanelHistorialMedico extends JPanel {
         datos.add(new JLabel("Paciente:"));
         datos.add(lblPaciente);
 
-        datos.add(new JLabel("Ultima Consulta:"));
+        datos.add(new JLabel("Ultima consulta registrada:"));
         datos.add(lblUltimaConsulta);
 
-        encabezado.add(
-            datos, BorderLayout.CENTER
-        );
+        superior.add(datos, BorderLayout.CENTER);
 
-        add(encabezado, BorderLayout.NORTH);
+        add(superior, BorderLayout.NORTH);
 
-        // ====================================
-        // TABLA DE HISTORIAL
-        // ====================================
-        JPanel centro =
-            new JPanel(new BorderLayout(5, 5));
+        // ========================================
+        // TABLA DEL HISTORIAL CLINICO
+        // ========================================
+        JPanel central = new JPanel(new BorderLayout());
 
-        centro.setBorder(
+        central.setBorder(
             BorderFactory.createTitledBorder(
-                "Historial de Atenciones Previas"
+                "Consultas anteriores"
             )
         );
 
-        tblHistorial.setRowHeight(24);
         tblHistorial.setAutoCreateRowSorter(true);
+        tblHistorial.setRowHeight(23);
 
-        JScrollPane tablaScroll =
-            new JScrollPane(tblHistorial);
-
-        centro.add(
-            tablaScroll, BorderLayout.CENTER
+        central.add(
+            new JScrollPane(tblHistorial),
+            BorderLayout.CENTER
         );
 
-        add(centro, BorderLayout.CENTER);
+        add(central, BorderLayout.CENTER);
 
-        // ====================================
-        // FORMULARIO DE DIAGNOSTICO
-        // ====================================
-        JPanel formulario =
-            new JPanel(new BorderLayout(6, 6));
+        // ========================================
+        // FORMULARIO DE DIAGNOSTICO Y NOTAS
+        // ========================================
+        JPanel inferior =
+            new JPanel(new BorderLayout(5, 5));
 
-        formulario.setBorder(
+        inferior.setBorder(
             BorderFactory.createTitledBorder(
-                "Notas Medicas / Diagnostico Actual"
+                "Diagnostico y notas medicas"
             )
         );
 
-        JPanel seleccionarCita =
+        JPanel seleccionar =
             new JPanel(new BorderLayout(5, 5));
 
-        seleccionarCita.add(
-            new JLabel("Cita a atender:"),
+        seleccionar.add(
+            new JLabel("Cita:"),
             BorderLayout.WEST
         );
 
-        seleccionarCita.add(
-            cmbCitas, BorderLayout.CENTER
+        seleccionar.add(
+            cmbCitas,
+            BorderLayout.CENTER
         );
 
-        formulario.add(
-            seleccionarCita, BorderLayout.NORTH
+        inferior.add(
+            seleccionar,
+            BorderLayout.NORTH
         );
 
         // CAMPOS DE TEXTO
@@ -217,38 +200,36 @@ public class PanelHistorialMedico extends JPanel {
         txtNotas.setLineWrap(true);
         txtNotas.setWrapStyleWord(true);
 
-        JPanel diagnostico =
-            new JPanel(new BorderLayout(3, 3));
+        JPanel bloqueDiagnostico =
+            new JPanel(new BorderLayout());
 
-        diagnostico.add(
+        bloqueDiagnostico.add(
             new JLabel("Diagnostico:"),
             BorderLayout.NORTH
         );
 
-        diagnostico.add(
+        bloqueDiagnostico.add(
             new JScrollPane(txtDiagnostico),
             BorderLayout.CENTER
         );
 
-        JPanel notas =
-            new JPanel(new BorderLayout(3, 3));
+        JPanel bloqueNotas =
+            new JPanel(new BorderLayout());
 
-        notas.add(
-            new JLabel("Observaciones del doctor:"),
+        bloqueNotas.add(
+            new JLabel("Observaciones:"),
             BorderLayout.NORTH
         );
 
-        notas.add(
+        bloqueNotas.add(
             new JScrollPane(txtNotas),
             BorderLayout.CENTER
         );
 
-        campos.add(diagnostico);
-        campos.add(notas);
+        campos.add(bloqueDiagnostico);
+        campos.add(bloqueNotas);
 
-        formulario.add(
-            campos, BorderLayout.CENTER
-        );
+        inferior.add(campos, BorderLayout.CENTER);
 
         // BOTON GUARDAR
         JPanel acciones =
@@ -256,19 +237,20 @@ public class PanelHistorialMedico extends JPanel {
 
         acciones.add(btnGuardar);
 
-        formulario.add(
-            acciones, BorderLayout.SOUTH
+        inferior.add(
+            acciones,
+            BorderLayout.SOUTH
         );
 
-        formulario.setPreferredSize(
-            new Dimension(600, 290)
+        inferior.setPreferredSize(
+            new Dimension(560, 280)
         );
 
-        add(formulario, BorderLayout.SOUTH);
+        add(inferior, BorderLayout.SOUTH);
 
-        // ====================================
-        // EVENTOS DE LA INTERFAZ
-        // ====================================
+        // ========================================
+        // EVENTOS DE LOS BOTONES
+        // ========================================
 
         btnBuscar.addActionListener(e ->
             consultarHistorialPaciente()
@@ -278,169 +260,186 @@ public class PanelHistorialMedico extends JPanel {
             consultarHistorialPaciente()
         );
 
-        btnGuardar.addActionListener(e ->
-            guardarDiagnosticoYNotas()
-        );
-
         cmbCitas.addActionListener(e ->
-            mostrarDatosDeCitaSeleccionada()
+            mostrarDiagnosticoDeCita()
         );
 
+        btnGuardar.addActionListener(e ->
+            guardarDiagnostico()
+        );
+
+        // Seleccionar una cita desde la tabla
         tblHistorial.getSelectionModel()
             .addListSelectionListener(e -> {
 
                 if (!e.getValueIsAdjusting()
-                    && tblHistorial.getSelectedRow() >= 0) {
+                        && tblHistorial.getSelectedRow() >= 0) {
 
-                    verConsultaSeleccionada();
+                    int fila =
+                        tblHistorial.convertRowIndexToModel(
+                            tblHistorial.getSelectedRow()
+                        );
+
+                    int idCita = ((Number)
+                        modelo.getValueAt(fila, 0)
+                    ).intValue();
+
+                    for (int i = 0;
+                         i < cmbCitas.getItemCount(); i++) {
+
+                        if (cmbCitas.getItemAt(i).id == idCita) {
+
+                            cmbCitas.setSelectedIndex(i);
+
+                            mostrarDiagnosticoDeCita();
+
+                            break;
+                        }
+                    }
                 }
             });
-
-        lblPaciente.setFont(
-            lblPaciente.getFont().deriveFont(
-                Font.BOLD
-            )
-        );
     }
 
-    // ====================================
+    // ========================================
     // BUSCAR PACIENTE POR CEDULA
-    // ====================================
+    // ========================================
     private void consultarHistorialPaciente() {
 
-        String cedula =
-            txtCedula.getText().trim();
+        String cedula = txtCedula.getText().trim();
 
         limpiarResultados();
 
         if (cedula.isEmpty()) {
-
             JOptionPane.showMessageDialog(
-                this, "Ingrese una cedula para buscar."
+                this,
+                "Ingrese una cedula."
             );
-
             return;
         }
 
         try {
 
             String[] paciente =
-                dao.obtenerPacienteParaHistorial(
-                    cedula
-                );
+                dao.obtenerPacienteParaHistorial(cedula);
 
             if (paciente == null) {
-
                 JOptionPane.showMessageDialog(
                     this,
-                    "No existe un paciente con esa cedula."
+                    "Paciente no encontrado."
                 );
-
                 return;
             }
 
-            cedulaBuscada = paciente[0];
+            cedulaActual = paciente[0];
 
             lblCedula.setText(paciente[0]);
             lblPaciente.setText(paciente[1]);
             lblUltimaConsulta.setText(paciente[2]);
 
-            // CONSULTAR LAS CITAS
-            List<Object[]> citas =
-                dao.listarCitasParaHistorial(
-                    cedulaBuscada
-                );
+            // CARGAR CITAS DEL PACIENTE
+            cargando = true;
 
-            for (Object[] cita : citas) {
+            try {
 
-                int id =
-                    ((Number) cita[0]).intValue();
+                List<Object[]> citas =
+                    dao.listarCitasParaHistorial(
+                        cedulaActual
+                    );
 
-                String descripcion =
-                    "Cita #" + id
-                    + " | " + cita[1]
-                    + " | " + cita[2]
-                    + " | " + cita[3];
+                for (Object[] cita : citas) {
 
-                cmbCitas.addItem(
-                    new CitaOpcion(id, descripcion)
-                );
+                    int id =
+                        ((Number) cita[0]).intValue();
+
+                    String descripcion =
+                        "#" + id +
+                        " | " + cita[1] +
+                        " | " + cita[2] +
+                        " | " + cita[3];
+
+                    cmbCitas.addItem(
+                        new CitaItem(id, descripcion)
+                    );
+                }
+
+                actualizarTabla();
+
+            } finally {
+                cargando = false;
             }
-
-            cargarTablaHistorial();
-
-            mostrarDatosDeCitaSeleccionada();
 
             btnGuardar.setEnabled(
                 cmbCitas.getItemCount() > 0
             );
 
-            if (citas.isEmpty()) {
-
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Paciente encontrado sin citas registradas."
-                );
-            }
+            mostrarDiagnosticoDeCita();
 
         } catch (SQLException ex) {
-
             limpiarResultados();
             mostrarError(ex);
         }
     }
 
-    // ====================================
-    // LLENAR TABLA DE HISTORIAL CLINICO
-    // ====================================
-    private void cargarTablaHistorial()
+    // ========================================
+    // CARGAR EL HISTORIAL EN LA TABLA
+    // ========================================
+    private void actualizarTabla()
             throws SQLException {
 
-        modeloHistorial.setRowCount(0);
+        boolean anterior = cargando;
+        cargando = true;
 
-        List<Object[]> historial =
-            dao.listarHistorialClinicoPorCedula(
-                cedulaBuscada
-            );
+        try {
 
-        for (Object[] fila : historial) {
-            modeloHistorial.addRow(fila);
+            modelo.setRowCount(0);
+
+            List<Object[]> historial =
+                dao.listarHistorialClinicoPorCedula(
+                    cedulaActual
+                );
+
+            for (Object[] fila : historial) {
+                modelo.addRow(fila);
+            }
+
+        } finally {
+            cargando = anterior;
         }
     }
 
-    // ====================================
-    // MOSTRAR DATOS DE LA CITA SELECCIONADA
-    // ====================================
-    private void mostrarDatosDeCitaSeleccionada() {
+    // ========================================
+    // MOSTRAR DIAGNOSTICO DE UNA CITA
+    // ========================================
+    private void mostrarDiagnosticoDeCita() {
+
+        if (cargando) {
+            return;
+        }
 
         txtDiagnostico.setText("");
         txtNotas.setText("");
 
-        if (cedulaBuscada == null) {
-            return;
-        }
+        CitaItem seleccion =
+            (CitaItem) cmbCitas.getSelectedItem();
 
-        CitaOpcion cita =
-            (CitaOpcion) cmbCitas.getSelectedItem();
-
-        if (cita == null) {
+        if (seleccion == null) {
             return;
         }
 
         for (int i = 0;
-             i < modeloHistorial.getRowCount(); i++) {
+             i < modelo.getRowCount(); i++) {
 
             int id = ((Number)
-                modeloHistorial.getValueAt(i, 0)
+                modelo.getValueAt(i, 0)
             ).intValue();
 
-            if (id == cita.id) {
+            if (id == seleccion.id) {
 
                 Object diagnostico =
-                    modeloHistorial.getValueAt(i, 3);
+                    modelo.getValueAt(i, 3);
 
                 Object notas =
-                    modeloHistorial.getValueAt(i, 4);
+                    modelo.getValueAt(i, 4);
 
                 txtDiagnostico.setText(
                     diagnostico == null
@@ -459,82 +458,39 @@ public class PanelHistorialMedico extends JPanel {
         }
     }
 
-    // ====================================
-    // SELECCIONAR CONSULTA DESDE LA TABLA
-    // ====================================
-    private void verConsultaSeleccionada() {
+    // ========================================
+    // GUARDAR DIAGNOSTICO EN MYSQL
+    // ========================================
+    private void guardarDiagnostico() {
 
-        int fila = tblHistorial.convertRowIndexToModel(
-            tblHistorial.getSelectedRow()
-        );
-
-        int idCita =
-            ((Number) modeloHistorial.getValueAt(
-                fila, 0
-            )).intValue();
-
-        for (int i = 0;
-             i < cmbCitas.getItemCount(); i++) {
-
-            if (cmbCitas.getItemAt(i).id == idCita) {
-
-                cmbCitas.setSelectedIndex(i);
-
-                mostrarDatosDeCitaSeleccionada();
-
-                break;
-            }
-        }
-    }
-
-    // ====================================
-    // GUARDAR DIAGNOSTICO Y NOTAS EN MYSQL
-    // ====================================
-    private void guardarDiagnosticoYNotas() {
-
-        CitaOpcion cita =
-            (CitaOpcion) cmbCitas.getSelectedItem();
+        CitaItem seleccion =
+            (CitaItem) cmbCitas.getSelectedItem();
 
         String diagnostico =
             txtDiagnostico.getText().trim();
 
-        String notas =
-            txtNotas.getText().trim();
-
-        if (cedulaBuscada == null
-            || cita == null) {
+        if (cedulaActual == null
+                || seleccion == null
+                || diagnostico.isEmpty()) {
 
             JOptionPane.showMessageDialog(
                 this,
-                "Primero busque un paciente "
-                + "y seleccione una cita."
+                "Busque el paciente, seleccione una cita "
+                + "e ingrese un diagnostico."
             );
-
             return;
         }
 
-        if (diagnostico.isEmpty()) {
-
-            JOptionPane.showMessageDialog(
-                this,
-                "Debe ingresar el diagnostico."
-            );
-
-            return;
-        }
-
-        int respuesta =
+        int confirmar =
             JOptionPane.showConfirmDialog(
                 this,
-                "Guardar el diagnostico "
-                + "de la cita #" + cita.id + "?",
-                "Confirmar guardado",
+                "Guardar el diagnostico de la cita #"
+                + seleccion.id + "?",
+                "Confirmar",
                 JOptionPane.YES_NO_OPTION
             );
 
-        if (respuesta !=
-            JOptionPane.YES_OPTION) {
-
+        if (confirmar != JOptionPane.YES_OPTION) {
             return;
         }
 
@@ -542,108 +498,89 @@ public class PanelHistorialMedico extends JPanel {
 
             boolean guardado =
                 dao.guardarDiagnosticoYNotas(
-                    cita.id,
-                    cedulaBuscada,
+                    seleccion.id,
+                    cedulaActual,
                     diagnostico,
-                    notas
+                    txtNotas.getText().trim()
                 );
 
-            if (guardado) {
-
-                cargarTablaHistorial();
-
-                mostrarDatosDeCitaSeleccionada();
-
-                String[] paciente =
-                    dao.obtenerPacienteParaHistorial(
-                        cedulaBuscada
-                    );
-
-                if (paciente != null) {
-                    lblUltimaConsulta.setText(
-                        paciente[2]
-                    );
-                }
+            if (!guardado) {
 
                 JOptionPane.showMessageDialog(
                     this,
-                    "Diagnostico y notas "
-                    + "guardados correctamente."
+                    "No se pudo guardar el diagnostico."
                 );
 
-            } else {
+                return;
+            }
 
-                JOptionPane.showMessageDialog(
-                    this,
-                    "No se pudo guardar. "
-                    + "Verifique la cita y cedula."
+            // ACTUALIZAR LA TABLA
+            actualizarTabla();
+
+            String[] paciente =
+                dao.obtenerPacienteParaHistorial(
+                    cedulaActual
+                );
+
+            if (paciente != null) {
+                lblUltimaConsulta.setText(
+                    paciente[2]
                 );
             }
+
+            mostrarDiagnosticoDeCita();
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Diagnostico y notas guardados."
+            );
 
         } catch (SQLException ex) {
             mostrarError(ex);
         }
     }
 
-    // ====================================
-    // LIMPIAR FORMULARIO
-    // ====================================
+    // ========================================
+    // LIMPIAR LOS CAMPOS
+    // ========================================
     private void limpiarResultados() {
 
-        cedulaBuscada = null;
+        cargando = true;
 
-        lblCedula.setText("-");
-        lblPaciente.setText("-");
-        lblUltimaConsulta.setText("-");
+        try {
 
-        cmbCitas.removeAllItems();
+            cedulaActual = null;
 
-        modeloHistorial.setRowCount(0);
+            lblCedula.setText("-");
+            lblPaciente.setText("-");
+            lblUltimaConsulta.setText("-");
 
-        txtDiagnostico.setText("");
-        txtNotas.setText("");
+            cmbCitas.removeAllItems();
 
-        btnGuardar.setEnabled(false);
+            modelo.setRowCount(0);
+
+            txtDiagnostico.setText("");
+            txtNotas.setText("");
+
+            btnGuardar.setEnabled(false);
+
+        } finally {
+            cargando = false;
+        }
     }
 
-    // ====================================
-    // MOSTRAR ERRORES
-    // ====================================
+    // ========================================
+    // MOSTRAR ERRORES DE MYSQL
+    // ========================================
     private void mostrarError(SQLException ex) {
 
         JOptionPane.showMessageDialog(
             this,
-            "Error consultando consultorio_db: "
-            + ex.getMessage(),
-            "Error de base de datos",
+            ex.getMessage(),
+            "Error de MySQL",
             JOptionPane.ERROR_MESSAGE
         );
     }
 
-    // ====================================
-    // EJECUTAR PANEL INDEPENDIENTEMENTE
-    // ====================================
-    public static void main(String[] args) {
-
-        SwingUtilities.invokeLater(() -> {
-
-            JFrame ventana = new JFrame(
-                "SmartMed - Historial Clinico - Nando"
-            );
-
-            ventana.setDefaultCloseOperation(
-                JFrame.EXIT_ON_CLOSE
-            );
-
-            ventana.setContentPane(
-                new PanelHistorialMedico()
-            );
-
-            ventana.pack();
-
-            ventana.setLocationRelativeTo(null);
-
-            ventana.setVisible(true);
-        });
-    }
+    
 }
