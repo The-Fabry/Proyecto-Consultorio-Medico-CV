@@ -10,6 +10,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 public class CitaDAO {
 
@@ -206,5 +207,39 @@ public class CitaDAO {
         }
         
         return listaCitas;
+    }
+    public DefaultTableModel obtenerCitasPorMedico(int idEspecialista) {
+        DefaultTableModel modelo = new DefaultTableModel();
+        modelo.addColumn("Cita #");
+        modelo.addColumn("Fecha/Hora");
+        modelo.addColumn("Paciente");
+        modelo.addColumn("Cédula");
+        modelo.addColumn("Estado");
+
+        String sql = "SELECT c.id_cita, c.fecha_cita, cl.nombre, cl.cedula, c.estado " +
+                     "FROM citas c " +
+                     "JOIN clientes cl ON c.id_cliente = cl.id_cliente " +
+                     "WHERE c.id_especialista = ?";
+
+        try (Connection cn = new ConexionBD().conectar();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            
+            ps.setInt(1, idEspecialista);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Object[] fila = new Object[5];
+                    fila[0] = "CITA-" + rs.getInt("id_cita");
+                    fila[1] = rs.getString("fecha_cita");
+                    fila[2] = rs.getString("nombre");
+                    fila[3] = rs.getString("cedula");
+                    fila[4] = rs.getString("estado");
+                    modelo.addRow(fila);
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al consultar citas del médico: " + e.getMessage());
+        }
+
+        return modelo;
     }
 }
