@@ -391,4 +391,39 @@ public class CitaDAO {
         }
         return datos;
     }
+
+    // =============================================================
+    // MODULO DE CELESTE - Cambio de estado de la cita
+    // =============================================================
+    public boolean actualizarEstadoCita(int idCita, String nuevoEstado) {
+        String sql = "UPDATE citas SET estado = ? WHERE id_cita = ?";
+
+        try (Connection cn = new ConexionBD().conectar(); PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, nuevoEstado);
+            ps.setInt(2, idCita);
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al actualizar el estado de la cita: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public String obtenerEstadoCita(int idCita) {
+        String estado = null;
+        String sql = "SELECT estado FROM citas WHERE id_cita = ?";
+
+        try (Connection cn = new ConexionBD().conectar(); PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, idCita);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    estado = rs.getString("estado");
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al consultar el estado: " + e.getMessage());
+        }
+        return estado;
+    }
 }
