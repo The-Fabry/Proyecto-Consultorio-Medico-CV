@@ -91,7 +91,7 @@ public class CitaDAO {
         return datos;
     }
 
-    // ⭐ Valida si el especialista ya tiene una cita ocupada en la fecha y hora exacta
+    // Valida si el especialista ya tiene una cita ocupada en la fecha y hora exacta
     public boolean existeCita(int idEspecialista, String fechaHora) {
         boolean existe = false;
         ConexionBD cc = new ConexionBD();
@@ -208,6 +208,7 @@ public class CitaDAO {
         
         return listaCitas;
     }
+
     public DefaultTableModel obtenerCitasPorMedico(int idEspecialista) {
         DefaultTableModel modelo = new DefaultTableModel();
         modelo.addColumn("Cita #");
@@ -242,4 +243,125 @@ public class CitaDAO {
 
         return modelo;
     }
+
+    // =============================================================
+    // MODULO DE NANDO - Historial clinico del paciente
+    // Mantiene la conexion existente de ConexionBD.
+    // =============================================================
+
+    private Connection conectarHistorial() throws SQLException {
+        Connection conexion = new ConexionBD().conectar();
+        if (conexion == null) {
+            throw new SQLException("No se pudo conectar con consultorio_db. Verifica MySQL y JDBC.");
+        }
+        return conexion;
+    }
+
+    // Busca un paciente y su ultima consulta clinica REGISTRADA.
+    public String[] obtenerPacienteParaHistorial(String cedula) throws SQLException {
+        String sql = "SELECT cl.cedula, cl.nombre, MAX(h.fecha_registro) AS ultima_consulta "
+                + "FROM clientes cl "
+                + "LEFT JOIN citas c ON c.id_cliente = cl.id_cliente "
+                + "LEFT JOIN historial_clinico h ON h.id_cita = c.id_cita "
+                + "WHERE cl.cedula = ? "
+                + "GROUP BY cl.id_cliente, cl.cedula, cl.nombre "
+                + "ORDER BY cl.id_cliente LIMIT 1";
+
+        try (Connection cn = conectarHistorial();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, cedula);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                Timestamp ultima = rs.getTimestamp("ultima_consulta");
+                return new String[]{
+                    rs.getString("cedula"),
+                    rs.getString("nombre"),
+                    ultima == null ? "Sin consultas registradas" : ultima.toString()
+                };
+            }
+        }
+    }
+
+    // Las citas disponibles para asociar un diagnostico al paciente.
+    public List<Object[]> listarCitasParaHistorial(String cedula) throws SQLException {
+        List<Object[]> citas = new ArrayList<>();
+        String sql = "SELECT c.id_cita, c.fecha_cita, e.nombre_completo, c.estado "
+                + "FROM citas c "
+                + "INNER JOIN clientes cl ON cl.id_cliente = c.id_cliente "
+                + "INNER JOIN especialistas e ON e.id_especialista = c.id_especialista "
+                + "WHERE cl.cedula = ? ORDER BY c.fecha_cita DESC";
+
+        try (Connection cn = conectarHistorial();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, cedula);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    citas.add(new Object[]{
+                        rs.getInt("id_cita"),
+                        rs.getTimestamp("fecha_cita"),
+                        rs.getString("nombre_completo"),
+                        rs.getString("estado")
+                    });
+                }
+            }
+        }
+        return citas;
+    }
+
+    // Devuelve solo consultas CON diagnostico/notas registrados.
+    public List<Object[]> listarHistorialClinicoPorCedula(String cedula) throws SQLException {
+        List<Object[]> historial = new ArrayList<>();
+        String sql = "SELECT c.id_cita, c.fecha_cita, e.nombre_completo, "
+                + "h.diagnostico, h.notas "
+                + "FROM historial_clinico h "
+                + "INNER JOIN citas c ON c.id_cita = h.id_cita "
+                + "INNER JOIN clientes cl ON cl.id_cliente = c.id_cliente "
+                + "INNER JOIN especialistas e ON e.id_especialista = c.id_especialista "
+                + "WHERE cl.cedula = ? ORDER BY c.fecha_cita DESC";
+
+        try (Connection cn = conectarHistorial();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, cedula);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    historial.add(new Object[]{
+                        rs.getInt("id_cita"),
+                        rs.getTimestamp("fecha_cita"),
+                        rs.getString("nombre_completo"),
+                        rs.getString("diagnostico"),
+                        rs.getString("notas")
+                    });
+                }
+            }
+        }
+        return historial;
+    }
+
+    // Guarda por cita. Si ya hay un registro para esa cita, lo actualiza.
+    public boolean guardarDiagnosticoYNotas(int idCita, String cedula,
+                                           String diagnostico, String notas) throws SQLException {
+        if (idCita <= 0 || cedula == null || cedula.trim().isEmpty()
+                || diagnostico == null || diagnostico.trim().isEmpty()) {
+            return false;
+        }
+        String sql = "INSERT INTO historial_clinico (id_cita, diagnostico, notas) "
+                + "SELECT c.id_cita, ?, ? FROM citas c "
+                + "INNER JOIN clientes cl ON cl.id_cliente = c.id_cliente "
+                + "WHERE c.id_cita = ? AND cl.cedula = ? "
+                + "ON DUPLICATE KEY UPDATE diagnostico = ?, notas = ?, "
+                + "fecha_registro = CURRENT_TIMESTAMP";
+        try (Connection cn = conectarHistorial();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, diagnostico.trim());
+            ps.setString(2, notas == null ? "" : notas.trim());
+            ps.setInt(3, idCita);
+            ps.setString(4, cedula.trim());
+            ps.setString(5, diagnostico.trim());
+            ps.setString(6, notas == null ? "" : notas.trim());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
 }
