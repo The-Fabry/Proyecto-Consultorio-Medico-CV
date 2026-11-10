@@ -13,10 +13,17 @@ public class VistaMedico extends javax.swing.JFrame {
     /**
      * Creates new form VistaMedico
      */
-    public VistaMedico() {
+  public VistaMedico() {
         initComponents();
+        cargarAgendaMedico(); // 2. Llama al método aquí
     }
-
+  private void cargarAgendaMedico() {
+        dao.CitaDAO citaDAO = new dao.CitaDAO();
+        int idMedicoActual = 1; 
+        javax.swing.table.DefaultTableModel modeloLleno = citaDAO.obtenerCitasPorMedico(idMedicoActual); 
+        jTable1.setModel(modeloLleno);
+    }
+  
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
