@@ -15,7 +15,30 @@ public class VistaMedico extends javax.swing.JFrame {
      */
     public VistaMedico() {
         initComponents();
+        this.setLocationRelativeTo(null);
+        this.setTitle("SmartMed - Portal del Especialista Médico");
+        this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        aplicarEstilosClinicos();
         cargarAgendaMedico();
+    }
+
+    private void aplicarEstilosClinicos() {
+        UIClinico.estilizarVentana(this);
+        UIClinico.estilizarTarjeta(jPanel1);
+        UIClinico.estilizarTarjeta(jPanel2);
+
+        jLabel1.setFont(UIClinico.FONT_TITULO_MEDIO);
+        jLabel1.setForeground(UIClinico.COLOR_PRIMARIO);
+
+        jLabel2.setFont(UIClinico.FONT_REGULAR);
+        jLabel2.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+
+        UIClinico.estilizarTabla(jTable1);
+
+        UIClinico.estilizarBotonPrimario(jButton1);
+        jButton1.addActionListener(evt -> cargarAgendaMedico());
+
+        UIClinico.estilizarBotonExito(jButton2);
     }
 
     private void cargarAgendaMedico() {

@@ -19,6 +19,8 @@ public class VistaPaciente extends javax.swing.JFrame {
     public VistaPaciente() {
         initComponents();
         this.setLocationRelativeTo(null);
+        this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        aplicarEstilosClinicos();
         cargarEspecialistas();
         jtxtFecha.setEditable(false);
         
@@ -29,6 +31,42 @@ public class VistaPaciente extends javax.swing.JFrame {
         } else {
             JOptionPane.showMessageDialog(this, "No se detectó una sesión activa.", "Advertencia", JOptionPane.WARNING_MESSAGE);
         }
+    }
+
+    private void aplicarEstilosClinicos() {
+        UIClinico.estilizarVentana(this);
+        if (jbtnVerTicket != null) {
+            UIClinico.estilizarTarjeta(jbtnVerTicket);
+        }
+
+        jLabel1.setFont(UIClinico.FONT_TITULO_GRANDE);
+        jLabel1.setForeground(UIClinico.COLOR_PRIMARIO);
+
+        java.awt.Font fuenteEtiqueta = UIClinico.FONT_SUBTITULO;
+        jLabel2.setFont(fuenteEtiqueta);
+        jLabel2.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+        jLabel3.setFont(fuenteEtiqueta);
+        jLabel3.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+        jLabel4.setFont(fuenteEtiqueta);
+        jLabel4.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+        jLabel5.setFont(fuenteEtiqueta);
+        jLabel5.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+        jLabel6.setFont(fuenteEtiqueta);
+        jLabel6.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+        jLabel7.setFont(fuenteEtiqueta);
+        jLabel7.setForeground(UIClinico.COLOR_PRIMARIO);
+
+        UIClinico.estilizarBotonPrimario(jtbnGuardar);
+        UIClinico.estilizarBotonExito(jButton1);
+        UIClinico.estilizarBotonSecundario(jbtnElegirF);
+        UIClinico.estilizarBotonSecundario(jtbnVolver);
+
+        UIClinico.estilizarCampoTexto(jtxtCedula);
+        UIClinico.estilizarCampoTexto(jtxtNombre);
+        UIClinico.estilizarCampoTexto(jtxtTelefono);
+        UIClinico.estilizarCampoTexto(jtxtFecha);
+        UIClinico.estilizarCombo(jcbxEspecialista);
+        UIClinico.estilizarCombo(jcbxMisCitas);
     }
 
     private void cargarDatosDeUsuarioLogueado(String nombreUsuario) {

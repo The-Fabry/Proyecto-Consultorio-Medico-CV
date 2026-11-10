@@ -151,7 +151,14 @@ public class PanelHistorialMedico extends JPanel {
         );
 
         tblHistorial.setAutoCreateRowSorter(true);
-        tblHistorial.setRowHeight(23);
+        UIClinico.estilizarTabla(tblHistorial);
+        UIClinico.estilizarBotonPrimario(btnBuscar);
+        UIClinico.estilizarBotonExito(btnGuardar);
+        UIClinico.estilizarCampoTexto(txtCedula);
+        UIClinico.estilizarCombo(cmbCitas);
+        btnGuardar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        btnGuardar.setFocusPainted(false);
+        btnGuardar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
         central.add(
             new JScrollPane(tblHistorial),

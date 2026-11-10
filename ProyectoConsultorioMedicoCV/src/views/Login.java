@@ -17,6 +17,26 @@ public class Login extends javax.swing.JFrame {
     public Login() {
         initComponents();
         this.setLocationRelativeTo(null); // Centrar la ventana en la pantalla
+        aplicarEstilosClinicos();
+    }
+
+    private void aplicarEstilosClinicos() {
+        UIClinico.estilizarVentana(this);
+        UIClinico.estilizarTarjeta(jPanel1);
+
+        jLabel1.setFont(UIClinico.FONT_TITULO_GRANDE);
+        jLabel1.setForeground(UIClinico.COLOR_PRIMARIO);
+
+        jLabel2.setFont(UIClinico.FONT_SUBTITULO);
+        jLabel2.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+
+        jLabel3.setFont(UIClinico.FONT_SUBTITULO);
+        jLabel3.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+
+        UIClinico.estilizarCampoTexto(jtxtUsuario);
+        UIClinico.estilizarCampoTexto(jtxtContraseña);
+
+        UIClinico.estilizarBotonPrimario(jbtnIngresar);
     }
 
     // 1. MÉTODO PARA VALIDAR CAMPOS VACÍOS

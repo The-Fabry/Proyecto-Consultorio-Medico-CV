@@ -11,6 +11,18 @@ public class MenuPrincipal extends javax.swing.JFrame {
      */
     public MenuPrincipal() {
         initComponents();
+        this.setLocationRelativeTo(null);
+        aplicarEstilosClinicos();
+    }
+
+    private void aplicarEstilosClinicos() {
+        UIClinico.estilizarVentana(this);
+        jLabel1.setFont(UIClinico.FONT_TITULO_GRANDE);
+        jLabel1.setForeground(UIClinico.COLOR_PRIMARIO);
+
+        UIClinico.estilizarBotonPrimario(jbtnAgendar);
+        UIClinico.estilizarBotonExito(jbtnRecepcion);
+        UIClinico.estilizarBotonSecundario(jbtnSalir);
     }
 
     /**

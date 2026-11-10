@@ -15,10 +15,43 @@ public class VistaRecepcion extends javax.swing.JFrame {
     public VistaRecepcion() {
         initComponents();
         this.setLocationRelativeTo(null); // Centrar ventana
+        aplicarEstilosClinicos();
+        jbtnValidar.addActionListener(evt -> validarAsistenciaTicket()); // Permite validar por clic además del Enter del escáner
         jtxtEscaneo.requestFocus(); // Pone el cursor parpadeando listo para el escáner
     }
 
-    // MÉTODO PARA VALIDAR EL CÓDIGO ESCANEADO
+    private void aplicarEstilosClinicos() {
+        this.setTitle("SmartMed - Recepción y Control de Acceso");
+        UIClinico.estilizarVentana(this);
+        UIClinico.estilizarTarjeta(jPanel1);
+        UIClinico.estilizarTarjeta(JPanel2);
+
+        jLabel1.setFont(UIClinico.FONT_TITULO_GRANDE);
+        jLabel1.setForeground(UIClinico.COLOR_PRIMARIO);
+
+        jLabel4.setFont(UIClinico.FONT_TITULO_MEDIO);
+        jLabel4.setForeground(UIClinico.COLOR_PRIMARIO);
+
+        jtxtEscaneo.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 18));
+        jtxtEscaneo.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        jtxtEscaneo.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+            new javax.swing.border.LineBorder(new java.awt.Color(147, 197, 253), 2, true),
+            new javax.swing.border.EmptyBorder(4, 8, 4, 8)
+        ));
+
+        UIClinico.estilizarBotonPrimario(jbtnValidar);
+        UIClinico.estilizarBotonExito(jbtnIngresar);
+        UIClinico.estilizarBotonSecundario(jbtnVolver);
+
+        java.awt.Font fuenteDetalle = UIClinico.FONT_REGULAR;
+        jlblCedula.setFont(fuenteDetalle);
+        jlblPacuente.setFont(fuenteDetalle);
+        jlblCita.setFont(fuenteDetalle);
+        jlblFechaH.setFont(fuenteDetalle);
+        jlblEspecialista.setFont(fuenteDetalle);
+    }
+
+    // MÉTODO PARA VALIDAR EL CÓDIGO ESCANEADO (COMPATIBILIDAD DUAL: ALFANUMÉRICO Y LÁSER NUMÉRICO)
     private void validarAsistenciaTicket() {
         String codigoLeido = jtxtEscaneo.getText().trim();
 
@@ -27,49 +60,78 @@ public class VistaRecepcion extends javax.swing.JFrame {
             return;
         }
 
+        // Filtro numérico para escáneres láser que leen solo dígitos
+        String digitosLeidos = codigoLeido.replaceAll("[^0-9]", "");
+
         ConexionBD conexion = new ConexionBD();
         Connection cn = conexion.conectar();
 
         try {
-            // Buscar la cita por su código de barras
-            String sql = "SELECT c.id_cita, cl.nombre, cl.apellido, c.estado FROM citas c "
+            // Búsqueda flexible: Coincidencia exacta o por los dígitos numéricos del código
+            String sql = "SELECT c.id_cita, cl.nombre, cl.apellido, cl.cedula, c.fecha_cita, "
+                    + "CONCAT(e.nombre_completo, ' - ', e.especialidad) AS especialista, c.estado, c.codigo_barras "
+                    + "FROM citas c "
                     + "JOIN clientes cl ON c.id_cliente = cl.id_cliente "
-                    + "WHERE c.codigo_barras = ?";
+                    + "JOIN especialistas e ON c.id_especialista = e.id_especialista "
+                    + "WHERE c.codigo_barras = ? "
+                    + "   OR REPLACE(REPLACE(c.codigo_barras, 'CITA-', ''), '-', '') = ? "
+                    + "   OR c.codigo_barras LIKE ? LIMIT 1";
 
             PreparedStatement pst = cn.prepareStatement(sql);
             pst.setString(1, codigoLeido);
+            pst.setString(2, digitosLeidos.isEmpty() ? codigoLeido : digitosLeidos);
+            pst.setString(3, "%" + (digitosLeidos.isEmpty() ? codigoLeido : digitosLeidos) + "%");
             ResultSet rs = pst.executeQuery();
 
             if (rs.next()) {
+                int idCita = rs.getInt("id_cita");
                 String nombrePaciente = rs.getString("nombre") + " " + rs.getString("apellido");
+                String cedula = rs.getString("cedula");
+                String fechaCita = rs.getString("fecha_cita");
+                String especialista = rs.getString("especialista");
                 String estadoActual = rs.getString("estado");
+                String codigoOriginal = rs.getString("codigo_barras");
 
-                if (estadoActual.equals("Asistió")) {
-                    JOptionPane.showMessageDialog(this, "⚠️ Este ticket ya fue utilizado anteriormente para: " + nombrePaciente, "Aviso", JOptionPane.WARNING_MESSAGE);
+                // Actualizar panel de detalles en pantalla
+                jlblCedula.setText("Cédula: " + cedula);
+                jlblPacuente.setText("Paciente: " + nombrePaciente);
+                jlblCita.setText("Número de Cita: #" + idCita + " (" + codigoOriginal + ")");
+                jlblFechaH.setText("Fecha/Hora: " + fechaCita);
+                jlblEspecialista.setText("Médico: " + especialista);
+
+                if ("Asistió".equalsIgnoreCase(estadoActual)) {
+                    jLabel3.setText("⚠️ Ticket ya registrado previamente.");
+                    jLabel3.setForeground(new java.awt.Color(217, 119, 6));
+                    JOptionPane.showMessageDialog(this, "⚠️ Este ticket ya fue utilizado anteriormente para:\n" + nombrePaciente, "Aviso de Asistencia", JOptionPane.WARNING_MESSAGE);
                 } else {
-                    // Actualizar el estado de la cita a "Asistió"
-                    String updateSql = "UPDATE citas SET estado = 'Asistió' WHERE codigo_barras = ?";
+                    // Actualizar el estado de la cita a "Asistió" usando el ID de la cita
+                    String updateSql = "UPDATE citas SET estado = 'Asistió' WHERE id_cita = ?";
                     PreparedStatement pstUpdate = cn.prepareStatement(updateSql);
-                    pstUpdate.setString(1, codigoLeido);
+                    pstUpdate.setInt(1, idCita);
                     pstUpdate.executeUpdate();
                     pstUpdate.close();
 
-                    JOptionPane.showMessageDialog(this, "✅ ¡Asistencia confirmada con éxito!\nPaciente: " + nombrePaciente, "Bienvenido", JOptionPane.INFORMATION_MESSAGE);
+                    jLabel3.setText("✅ ¡Asistencia confirmada con éxito!");
+                    jLabel3.setForeground(new java.awt.Color(16, 185, 129));
+                    JOptionPane.showMessageDialog(this, "✅ ¡Asistencia confirmada con éxito!\nPaciente: " + nombrePaciente + "\nEspecialista: " + especialista, "Bienvenido", JOptionPane.INFORMATION_MESSAGE);
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "❌ El código de barras no existe en el sistema.", "Error", JOptionPane.ERROR_MESSAGE);
+                jLabel3.setText("❌ Código no encontrado en el sistema.");
+                jLabel3.setForeground(new java.awt.Color(220, 38, 38));
+                JOptionPane.showMessageDialog(this, "❌ El código de barras no existe en el sistema.", "Error de Búsqueda", JOptionPane.ERROR_MESSAGE);
             }
 
             rs.close();
             pst.close();
             cn.close();
 
-            // Limpiar campo y volver a enfocar para el siguiente escaneo
+            // Limpiar campo y reenfocar para el siguiente paciente
             jtxtEscaneo.setText("");
             jtxtEscaneo.requestFocus();
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error al procesar la asistencia: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
