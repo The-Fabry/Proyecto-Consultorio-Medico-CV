@@ -20,15 +20,15 @@ public class CitaDAO {
         ConexionBD cc = new ConexionBD();
         Connection cn = cc.conectar();
         String sql = "SELECT * FROM especialistas";
-        
+
         try {
             Statement st = cn.createStatement();
             ResultSet rs = st.executeQuery(sql);
             while (rs.next()) {
                 Especialista esp = new Especialista(
-                    rs.getInt("id_especialista"),
-                    rs.getString("nombre_completo"),
-                    rs.getString("especialidad")
+                        rs.getInt("id_especialista"),
+                        rs.getString("nombre_completo"),
+                        rs.getString("especialidad")
                 );
                 lista.add(esp);
             }
@@ -47,7 +47,7 @@ public class CitaDAO {
         ConexionBD cc = new ConexionBD();
         Connection cn = cc.conectar();
         String sql = "SELECT cedula FROM usuarios WHERE usuario = ?";
-        
+
         try {
             PreparedStatement pst = cn.prepareStatement(sql);
             pst.setString(1, nombreUsuario);
@@ -70,18 +70,18 @@ public class CitaDAO {
         ConexionBD cc = new ConexionBD();
         Connection cn = cc.conectar();
         String sql = "SELECT nombre, telefono FROM clientes WHERE cedula = ?";
-        
+
         try {
             PreparedStatement pst = cn.prepareStatement(sql);
             pst.setString(1, cedula);
             ResultSet rs = pst.executeQuery();
-            
+
             if (rs.next()) {
                 datos = new String[2];
                 datos[0] = rs.getString("nombre");
                 datos[1] = rs.getString("telefono");
             }
-            
+
             rs.close();
             pst.close();
             cn.close();
@@ -97,19 +97,19 @@ public class CitaDAO {
         ConexionBD cc = new ConexionBD();
         Connection cn = cc.conectar();
         String sql = "SELECT COUNT(*) FROM citas WHERE id_especialista = ? AND fecha_cita = ?";
-        
+
         try {
             PreparedStatement pst = cn.prepareStatement(sql);
             pst.setInt(1, idEspecialista);
             pst.setString(2, fechaHora);
             ResultSet rs = pst.executeQuery();
-            
+
             if (rs.next()) {
                 if (rs.getInt(1) > 0) {
                     existe = true; // El horario ya está ocupado
                 }
             }
-            
+
             rs.close();
             pst.close();
             cn.close();
@@ -123,11 +123,11 @@ public class CitaDAO {
     public boolean guardarCita(String cedula, String nombre, String telefono, int idEspecialista, String fechaHora, String codigoBarras) {
         ConexionBD cc = new ConexionBD();
         Connection cn = cc.conectar();
-        
+
         try {
             // Insertar o actualizar cliente
-            String sqlCliente = "INSERT INTO clientes (cedula, nombre, telefono) VALUES (?, ?, ?) " +
-                                "ON DUPLICATE KEY UPDATE nombre=?, telefono=?";
+            String sqlCliente = "INSERT INTO clientes (cedula, nombre, telefono) VALUES (?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE nombre=?, telefono=?";
             PreparedStatement pstCliente = cn.prepareStatement(sqlCliente, Statement.RETURN_GENERATED_KEYS);
             pstCliente.setString(1, cedula);
             pstCliente.setString(2, nombre);
@@ -135,7 +135,7 @@ public class CitaDAO {
             pstCliente.setString(4, nombre);
             pstCliente.setString(5, telefono);
             pstCliente.executeUpdate();
-            
+
             // Obtener ID del cliente
             ResultSet rsKeys = pstCliente.getGeneratedKeys();
             int idCliente = 0;
@@ -161,11 +161,11 @@ public class CitaDAO {
             pstCita.setInt(2, idEspecialista);
             pstCita.setString(3, fechaHora);
             pstCita.setString(4, codigoBarras);
-            
+
             pstCita.executeUpdate();
             pstCita.close();
             cn.close();
-            
+
             return true;
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "Error al guardar la cita: " + e.getMessage());
@@ -178,18 +178,18 @@ public class CitaDAO {
         List<Object[]> listaCitas = new ArrayList<>();
         ConexionBD cc = new ConexionBD();
         Connection cn = cc.conectar();
-        
-        String sql = "SELECT c.fecha_cita, CONCAT(e.nombre_completo, ' - ', e.especialidad) AS medico, " +
-                     "c.codigo_barras, c.estado FROM citas c " +
-                     "JOIN clientes cl ON c.id_cliente = cl.id_cliente " +
-                     "JOIN especialistas e ON c.id_especialista = e.id_especialista " +
-                     "WHERE cl.cedula = ? ORDER BY c.fecha_cita DESC";
-        
+
+        String sql = "SELECT c.fecha_cita, CONCAT(e.nombre_completo, ' - ', e.especialidad) AS medico, "
+                + "c.codigo_barras, c.estado FROM citas c "
+                + "JOIN clientes cl ON c.id_cliente = cl.id_cliente "
+                + "JOIN especialistas e ON c.id_especialista = e.id_especialista "
+                + "WHERE cl.cedula = ? ORDER BY c.fecha_cita DESC";
+
         try {
             PreparedStatement pst = cn.prepareStatement(sql);
             pst.setString(1, cedula);
             ResultSet rs = pst.executeQuery();
-            
+
             while (rs.next()) {
                 Object[] fila = new Object[4];
                 fila[0] = rs.getString("fecha_cita");
@@ -198,14 +198,14 @@ public class CitaDAO {
                 fila[3] = rs.getString("estado");
                 listaCitas.add(fila);
             }
-            
+
             rs.close();
             pst.close();
             cn.close();
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "Error al buscar citas: " + e.getMessage());
         }
-        
+
         return listaCitas;
     }
 
@@ -217,14 +217,13 @@ public class CitaDAO {
         modelo.addColumn("Cédula");
         modelo.addColumn("Estado");
 
-        String sql = "SELECT c.id_cita, c.fecha_cita, cl.nombre, cl.cedula, c.estado " +
-                     "FROM citas c " +
-                     "JOIN clientes cl ON c.id_cliente = cl.id_cliente " +
-                     "WHERE c.id_especialista = ?";
+        String sql = "SELECT c.id_cita, c.fecha_cita, cl.nombre, cl.cedula, c.estado "
+                + "FROM citas c "
+                + "JOIN clientes cl ON c.id_cliente = cl.id_cliente "
+                + "WHERE c.id_especialista = ?";
 
-        try (Connection cn = new ConexionBD().conectar();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
-            
+        try (Connection cn = new ConexionBD().conectar(); PreparedStatement ps = cn.prepareStatement(sql)) {
+
             ps.setInt(1, idEspecialista);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -248,7 +247,6 @@ public class CitaDAO {
     // MODULO DE NANDO - Historial clinico del paciente
     // Mantiene la conexion existente de ConexionBD.
     // =============================================================
-
     private Connection conectarHistorial() throws SQLException {
         Connection conexion = new ConexionBD().conectar();
         if (conexion == null) {
@@ -267,8 +265,7 @@ public class CitaDAO {
                 + "GROUP BY cl.id_cliente, cl.cedula, cl.nombre "
                 + "ORDER BY cl.id_cliente LIMIT 1";
 
-        try (Connection cn = conectarHistorial();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+        try (Connection cn = conectarHistorial(); PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, cedula);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
@@ -293,8 +290,7 @@ public class CitaDAO {
                 + "INNER JOIN especialistas e ON e.id_especialista = c.id_especialista "
                 + "WHERE cl.cedula = ? ORDER BY c.fecha_cita DESC";
 
-        try (Connection cn = conectarHistorial();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+        try (Connection cn = conectarHistorial(); PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, cedula);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -321,8 +317,7 @@ public class CitaDAO {
                 + "INNER JOIN especialistas e ON e.id_especialista = c.id_especialista "
                 + "WHERE cl.cedula = ? ORDER BY c.fecha_cita DESC";
 
-        try (Connection cn = conectarHistorial();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+        try (Connection cn = conectarHistorial(); PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, cedula);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -341,7 +336,7 @@ public class CitaDAO {
 
     // Guarda por cita. Si ya hay un registro para esa cita, lo actualiza.
     public boolean guardarDiagnosticoYNotas(int idCita, String cedula,
-                                           String diagnostico, String notas) throws SQLException {
+            String diagnostico, String notas) throws SQLException {
         if (idCita <= 0 || cedula == null || cedula.trim().isEmpty()
                 || diagnostico == null || diagnostico.trim().isEmpty()) {
             return false;
@@ -352,8 +347,7 @@ public class CitaDAO {
                 + "WHERE c.id_cita = ? AND cl.cedula = ? "
                 + "ON DUPLICATE KEY UPDATE diagnostico = ?, notas = ?, "
                 + "fecha_registro = CURRENT_TIMESTAMP";
-        try (Connection cn = conectarHistorial();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+        try (Connection cn = conectarHistorial(); PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, diagnostico.trim());
             ps.setString(2, notas == null ? "" : notas.trim());
             ps.setInt(3, idCita);
@@ -364,4 +358,37 @@ public class CitaDAO {
         }
     }
 
+    // =============================================================
+    // MODULO DE ANAHI - Busqueda de cita por codigo de barras
+    // =============================================================
+    // Devuelve: [0]=cedula, [1]=paciente, [2]=id_cita, [3]=fecha_cita, [4]=especialista, [5]=estado
+    // Devuelve null si el codigo no existe.
+    public String[] buscarCitaPorCodigoBarras(String codigoBarras) {
+        String[] datos = null;
+        String sql = "SELECT cl.cedula, cl.nombre, c.id_cita, c.fecha_cita, "
+                + "e.nombre_completo, c.estado "
+                + "FROM citas c "
+                + "JOIN clientes cl ON c.id_cliente = cl.id_cliente "
+                + "JOIN especialistas e ON c.id_especialista = e.id_especialista "
+                + "WHERE c.codigo_barras = ?";
+
+        try (Connection cn = new ConexionBD().conectar(); PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, codigoBarras);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    datos = new String[6];
+                    datos[0] = rs.getString("cedula");
+                    datos[1] = rs.getString("nombre");
+                    datos[2] = String.valueOf(rs.getInt("id_cita"));
+                    datos[3] = rs.getString("fecha_cita");
+                    datos[4] = rs.getString("nombre_completo");
+                    datos[5] = rs.getString("estado");
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al buscar el ticket: " + e.getMessage());
+        }
+        return datos;
+    }
 }

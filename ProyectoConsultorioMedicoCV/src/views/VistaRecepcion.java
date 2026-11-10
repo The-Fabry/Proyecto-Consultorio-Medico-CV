@@ -73,6 +73,31 @@ public class VistaRecepcion extends javax.swing.JFrame {
         }
     }
 
+    private void buscarTicketPorCodigo() {
+        String codigo = jtxtEscaneo.getText().trim();
+
+        if (codigo.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Escanee o ingrese un código.");
+            return;
+        }
+
+        dao.CitaDAO citaDAO = new dao.CitaDAO();
+        String[] datos = citaDAO.buscarCitaPorCodigoBarras(codigo);
+
+        if (datos != null) {
+            jlblCedula.setText(datos[0]);
+            jlblPacuente.setText(datos[1]);
+            jlblCita.setText(datos[2]);
+            jlblFechaH.setText(datos[3]);
+            jlblEspecialista.setText(datos[4]);
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this, "Ticket no encontrado.");
+        }
+
+        jtxtEscaneo.setText("");
+        jtxtEscaneo.requestFocusInWindow();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -129,6 +154,11 @@ public class VistaRecepcion extends javax.swing.JFrame {
         });
 
         jbtnValidar.setText("Validar Ticket");
+        jbtnValidar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnValidarActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -276,6 +306,11 @@ public class VistaRecepcion extends javax.swing.JFrame {
     private void jtxtEscaneoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jtxtEscaneoActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jtxtEscaneoActionPerformed
+
+    private void jbtnValidarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnValidarActionPerformed
+        // TODO add your handling code here:
+        buscarTicketPorCodigo();
+    }//GEN-LAST:event_jbtnValidarActionPerformed
 
     /**
      * @param args the command line arguments
