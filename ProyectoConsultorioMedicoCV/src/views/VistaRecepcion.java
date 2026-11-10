@@ -51,7 +51,7 @@ public class VistaRecepcion extends javax.swing.JFrame {
         jlblEspecialista.setFont(fuenteDetalle);
     }
 
-    // MÉTODO PARA VALIDAR EL CÓDIGO ESCANEADO (COMPATIBILIDAD DUAL: ALFANUMÉRICO Y LÁSER NUMÉRICO)
+   // MÉTODO PARA VALIDAR EL CÓDIGO ESCANEADO (COMPATIBILIDAD DUAL: ALFANUMÉRICO Y LÁSER NUMÉRICO)
     private void validarAsistenciaTicket() {
         String codigoLeido = jtxtEscaneo.getText().trim();
 
@@ -67,8 +67,8 @@ public class VistaRecepcion extends javax.swing.JFrame {
         Connection cn = conexion.conectar();
 
         try {
-            // Búsqueda flexible: Coincidencia exacta o por los dígitos numéricos del código
-            String sql = "SELECT c.id_cita, cl.nombre, cl.apellido, cl.cedula, c.fecha_cita, "
+            // Búsqueda flexible adaptada para usar cl.nombre (ya que no tienes la columna apellido)
+            String sql = "SELECT c.id_cita, cl.nombre AS nombre_paciente, cl.cedula, c.fecha_cita, "
                     + "CONCAT(e.nombre_completo, ' - ', e.especialidad) AS especialista, c.estado, c.codigo_barras "
                     + "FROM citas c "
                     + "JOIN clientes cl ON c.id_cliente = cl.id_cliente "
@@ -85,7 +85,7 @@ public class VistaRecepcion extends javax.swing.JFrame {
 
             if (rs.next()) {
                 int idCita = rs.getInt("id_cita");
-                String nombrePaciente = rs.getString("nombre") + " " + rs.getString("apellido");
+                String nombrePaciente = rs.getString("nombre_paciente"); // Obtenemos el nombre completo directamente
                 String cedula = rs.getString("cedula");
                 String fechaCita = rs.getString("fecha_cita");
                 String especialista = rs.getString("especialista");
@@ -134,7 +134,7 @@ public class VistaRecepcion extends javax.swing.JFrame {
             e.printStackTrace();
         }
     }
-
+    
     private void buscarTicketPorCodigo() {
         String codigo = jtxtEscaneo.getText().trim();
 
