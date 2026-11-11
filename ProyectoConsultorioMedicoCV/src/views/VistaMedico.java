@@ -13,13 +13,15 @@ public class VistaMedico extends javax.swing.JFrame {
     /**
      * Creates new form VistaMedico
      */
+    private int idEspecialistaActual = 1;
+
     public VistaMedico() {
         initComponents();
         this.setLocationRelativeTo(null);
-        this.setTitle("SmartMed - Portal del Especialista Médico");
         this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         aplicarEstilosClinicos();
         cargarAgendaMedico();
+        configurarEventos();
     }
 
     private void aplicarEstilosClinicos() {
@@ -33,19 +35,77 @@ public class VistaMedico extends javax.swing.JFrame {
         jLabel2.setFont(UIClinico.FONT_REGULAR);
         jLabel2.setForeground(UIClinico.COLOR_TEXTO_MUTED);
 
+        jLabel3.setFont(UIClinico.FONT_REGULAR);
+        jLabel3.setForeground(UIClinico.COLOR_TEXTO_MUTED);
+
         UIClinico.estilizarTabla(jTable1);
 
         UIClinico.estilizarBotonPrimario(jButton1);
-        jButton1.addActionListener(evt -> cargarAgendaMedico());
-
         UIClinico.estilizarBotonExito(jButton2);
     }
 
-    private void cargarAgendaMedico() {
+    private void configurarEventos() {
+        jButton1.addActionListener(evt -> cargarAgendaMedico());
+        jButton2.addActionListener(evt -> atenderCitaSeleccionada());
+
+        // Permitir atender también al hacer doble clic en una fila de la agenda
+        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) {
+                    atenderCitaSeleccionada();
+                }
+            }
+        });
+    }
+
+    public void cargarAgendaMedico() {
         dao.CitaDAO citaDAO = new dao.CitaDAO();
-        int idMedicoActual = 1;
-        javax.swing.table.DefaultTableModel modeloLleno = citaDAO.obtenerCitasPorMedico(idMedicoActual);
+        String usuarioActual = model.Sesion.getUsuarioLogueado();
+
+        if (usuarioActual != null && !usuarioActual.trim().isEmpty()) {
+            this.idEspecialistaActual = citaDAO.obtenerIdEspecialistaPorUsuario(usuarioActual);
+        }
+
+        String nombreEsp = citaDAO.obtenerNombreEspecialista(this.idEspecialistaActual);
+        jLabel1.setText("Agenda: " + nombreEsp);
+        this.setTitle("SmartMed - Portal Médico (" + nombreEsp + ")");
+
+        javax.swing.table.DefaultTableModel modeloLleno = citaDAO.obtenerCitasPorMedico(this.idEspecialistaActual);
         jTable1.setModel(modeloLleno);
+        UIClinico.estilizarTabla(jTable1);
+    }
+
+    private void atenderCitaSeleccionada() {
+        int fila = jTable1.getSelectedRow();
+        if (fila < 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Seleccione una cita de la tabla para atender al paciente.", 
+                "Seleccionar Cita", 
+                javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        String cedula = jTable1.getValueAt(fila, 3).toString().trim();
+        String citaStr = jTable1.getValueAt(fila, 0).toString().trim();
+        String nombrePaciente = jTable1.getValueAt(fila, 2).toString().trim();
+        String estado = jTable1.getValueAt(fila, 4).toString().trim();
+
+        int idCita = 0;
+        try {
+            idCita = Integer.parseInt(citaStr.replaceAll("[^0-9]", ""));
+        } catch (NumberFormatException ignored) {}
+
+        // 1. Cargar automáticamente el paciente en el módulo de historial clínico
+        panelHistorialMedico1.cargarPacientePorCedula(cedula);
+
+        // 2. Posicionar la cita específica en el selector
+        if (idCita > 0) {
+            panelHistorialMedico1.seleccionarCitaPorId(idCita);
+        }
+
+        jLabel3.setText("Atendiendo a: " + nombrePaciente + " (" + citaStr + ") | Estado: " + estado);
+        jLabel3.setForeground(new java.awt.Color(15, 76, 129));
     }
 
     /**
@@ -100,26 +160,24 @@ public class VistaMedico extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 512, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 45, Short.MAX_VALUE))
-            .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGap(15, 15, 15)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel2)))
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 306, Short.MAX_VALUE)
+                                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addContainerGap()
                                 .addComponent(jButton1)
                                 .addGap(45, 45, 45)
                                 .addComponent(jButton2)))
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addGap(0, 224, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -130,8 +188,8 @@ public class VistaMedico extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 295, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 393, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1)
                     .addComponent(jButton2))
@@ -146,10 +204,10 @@ public class VistaMedico extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
                 .addComponent(panelHistorialMedico1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addContainerGap(32, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -167,8 +225,8 @@ public class VistaMedico extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -177,7 +235,7 @@ public class VistaMedico extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(8, Short.MAX_VALUE))
+                .addContainerGap(20, Short.MAX_VALUE))
         );
 
         pack();

@@ -5,18 +5,29 @@
 package views;
 
 import Conexion.ConexionBD;
+import java.awt.Color;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.swing.JOptionPane;
 
+/**
+ * Módulo de Recepción y Control de Llegada de Pacientes.
+ * Gestiona el escaneo láser automático, búsqueda manual y el cambio de estado
+ * de la cita hacia 'En Proceso' mediante confirmación explícita del recepcionista.
+ */
 public class VistaRecepcion extends javax.swing.JFrame {
+
+    // Variables de control de la cita actualmente cargada en pantalla
+    private int idCitaCargada = -1;
+    private String estadoCitaCargada = "";
+    private String codigoCitaCargada = "";
 
     public VistaRecepcion() {
         initComponents();
         this.setLocationRelativeTo(null); // Centrar ventana
         aplicarEstilosClinicos();
-        jbtnValidar.addActionListener(evt -> validarAsistenciaTicket()); // Permite validar por clic además del Enter del escáner
+        limpiarFichaDetalle();
         jtxtEscaneo.requestFocus(); // Pone el cursor parpadeando listo para el escáner
     }
 
@@ -51,23 +62,43 @@ public class VistaRecepcion extends javax.swing.JFrame {
         jlblEspecialista.setFont(fuenteDetalle);
     }
 
-   // MÉTODO PARA VALIDAR EL CÓDIGO ESCANEADO (COMPATIBILIDAD DUAL: ALFANUMÉRICO Y LÁSER NUMÉRICO)
-    private void validarAsistenciaTicket() {
+    /**
+     * Limpia la ficha de datos del paciente en pantalla.
+     */
+    private void limpiarFichaDetalle() {
+        this.idCitaCargada = -1;
+        this.estadoCitaCargada = "";
+        this.codigoCitaCargada = "";
+
+        jlblCedula.setText("Cédula: -");
+        jlblPacuente.setText("Paciente: -");
+        jlblCita.setText("Número de Cita: -");
+        jlblFechaH.setText("Fecha/Hora: -");
+        jlblEspecialista.setText("Médico: -");
+        jbtnIngresar.setEnabled(false);
+    }
+
+    /**
+     * REGLA 1 y 3: Captura el código escaneado por el láser o digitado manualmente,
+     * busca la cita en MySQL y rellena automáticamente los campos en pantalla
+     * SIN MODIFICAR EL ESTADO DE LA CITA DE INMEDIATO.
+     */
+    public void buscarYMostrarTicket() {
         String codigoLeido = jtxtEscaneo.getText().trim();
 
         if (codigoLeido.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor escanee o ingrese un código.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Por favor escanee con el lector o ingrese un código de ticket.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Filtro numérico para escáneres láser que leen solo dígitos
+        // Filtro numérico de apoyo para escáneres láser que leen solo dígitos
         String digitosLeidos = codigoLeido.replaceAll("[^0-9]", "");
 
         ConexionBD conexion = new ConexionBD();
         Connection cn = conexion.conectar();
 
         try {
-            // Búsqueda flexible adaptada para usar cl.nombre (ya que no tienes la columna apellido)
+            // Consulta SQL optimizada para búsqueda flexible (código completo o solo números)
             String sql = "SELECT c.id_cita, cl.nombre AS nombre_paciente, cl.cedula, c.fecha_cita, "
                     + "CONCAT(e.nombre_completo, ' - ', e.especialidad) AS especialista, c.estado, c.codigo_barras "
                     + "FROM citas c "
@@ -84,40 +115,52 @@ public class VistaRecepcion extends javax.swing.JFrame {
             ResultSet rs = pst.executeQuery();
 
             if (rs.next()) {
-                int idCita = rs.getInt("id_cita");
-                String nombrePaciente = rs.getString("nombre_paciente"); // Obtenemos el nombre completo directamente
+                this.idCitaCargada = rs.getInt("id_cita");
+                this.estadoCitaCargada = rs.getString("estado");
+                this.codigoCitaCargada = rs.getString("codigo_barras");
+
+                String nombrePaciente = rs.getString("nombre_paciente");
                 String cedula = rs.getString("cedula");
                 String fechaCita = rs.getString("fecha_cita");
                 String especialista = rs.getString("especialista");
-                String estadoActual = rs.getString("estado");
-                String codigoOriginal = rs.getString("codigo_barras");
 
-                // Actualizar panel de detalles en pantalla
+                // Rellenar automáticamente los datos informativos en pantalla
                 jlblCedula.setText("Cédula: " + cedula);
                 jlblPacuente.setText("Paciente: " + nombrePaciente);
-                jlblCita.setText("Número de Cita: #" + idCita + " (" + codigoOriginal + ")");
+                jlblCita.setText("Número de Cita: #" + this.idCitaCargada + " (" + this.codigoCitaCargada + ")");
                 jlblFechaH.setText("Fecha/Hora: " + fechaCita);
                 jlblEspecialista.setText("Médico: " + especialista);
 
-                if ("Asistió".equalsIgnoreCase(estadoActual)) {
-                    jLabel3.setText("⚠️ Ticket ya registrado previamente.");
-                    jLabel3.setForeground(new java.awt.Color(217, 119, 6));
-                    JOptionPane.showMessageDialog(this, "⚠️ Este ticket ya fue utilizado anteriormente para:\n" + nombrePaciente, "Aviso de Asistencia", JOptionPane.WARNING_MESSAGE);
-                } else {
-                    // Actualizar el estado de la cita a "Asistió" usando el ID de la cita
-                    String updateSql = "UPDATE citas SET estado = 'Asistió' WHERE id_cita = ?";
-                    PreparedStatement pstUpdate = cn.prepareStatement(updateSql);
-                    pstUpdate.setInt(1, idCita);
-                    pstUpdate.executeUpdate();
-                    pstUpdate.close();
+                // REGLA 3: Validaciones y advertencias según el estado actual de la cita
+                if ("Finalizada".equalsIgnoreCase(this.estadoCitaCargada) || "Finalizado".equalsIgnoreCase(this.estadoCitaCargada)) {
+                    jbtnIngresar.setEnabled(false); // Bloquea la operación
+                    jLabel3.setText("❌ Cita Finalizada - Atendida previamente.");
+                    jLabel3.setForeground(UIClinico.COLOR_PELIGRO);
+                    JOptionPane.showMessageDialog(this, 
+                        "❌ Cita Finalizada - Este ticket ya fue atendido por el médico", 
+                        "Cita Finalizada", 
+                        JOptionPane.ERROR_MESSAGE);
 
-                    jLabel3.setText("✅ ¡Asistencia confirmada con éxito!");
-                    jLabel3.setForeground(new java.awt.Color(16, 185, 129));
-                    JOptionPane.showMessageDialog(this, "✅ ¡Asistencia confirmada con éxito!\nPaciente: " + nombrePaciente + "\nEspecialista: " + especialista, "Bienvenido", JOptionPane.INFORMATION_MESSAGE);
+                } else if ("En Proceso".equalsIgnoreCase(this.estadoCitaCargada) || "Asistió".equalsIgnoreCase(this.estadoCitaCargada)) {
+                    jbtnIngresar.setEnabled(false); // Ya se encuentra en proceso
+                    jLabel3.setText("⚠️ El ticket ya se encuentra en proceso de atención.");
+                    jLabel3.setForeground(UIClinico.COLOR_ADVERTENCIA);
+                    JOptionPane.showMessageDialog(this, 
+                        "⚠️ El ticket ya se encuentra en proceso de atención", 
+                        "Aviso", 
+                        JOptionPane.WARNING_MESSAGE);
+
+                } else {
+                    // Estado 'Pendiente': Permite consultar cuantas veces sea necesario y habilita el botón de ingreso
+                    jbtnIngresar.setEnabled(true);
+                    jLabel3.setText("ℹ️ Ticket válido. Presione 'Ingresar a la Cita' para registrar llegada.");
+                    jLabel3.setForeground(UIClinico.COLOR_PRIMARIO);
                 }
+
             } else {
-                jLabel3.setText("❌ Código no encontrado en el sistema.");
-                jLabel3.setForeground(new java.awt.Color(220, 38, 38));
+                limpiarFichaDetalle();
+                jLabel3.setText("❌ Código de ticket no encontrado en el sistema.");
+                jLabel3.setForeground(UIClinico.COLOR_PELIGRO);
                 JOptionPane.showMessageDialog(this, "❌ El código de barras no existe en el sistema.", "Error de Búsqueda", JOptionPane.ERROR_MESSAGE);
             }
 
@@ -125,71 +168,65 @@ public class VistaRecepcion extends javax.swing.JFrame {
             pst.close();
             cn.close();
 
-            // Limpiar campo y reenfocar para el siguiente paciente
+            // Limpiar campo de texto y reenfocar para el siguiente escaneo
             jtxtEscaneo.setText("");
             jtxtEscaneo.requestFocus();
 
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al procesar la asistencia: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error al consultar la cita: " + e.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
     }
-    
-    private void buscarTicketPorCodigo() {
-        String codigo = jtxtEscaneo.getText().trim();
 
-        if (codigo.isEmpty()) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Escanee o ingrese un código.");
+    /**
+     * REGLA 2: El cambio de estado a 'En Proceso' ocurre ÚNICA Y EXCLUSIVAMENTE
+     * cuando el recepcionista hace clic en el botón 'Ingresar a la Cita'.
+     */
+    public void ingresarPacienteACita() {
+        if (this.idCitaCargada <= 0) {
+            JOptionPane.showMessageDialog(this, "Primero debe escanear o validar un ticket de cita.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        dao.CitaDAO citaDAO = new dao.CitaDAO();
-        String[] datos = citaDAO.buscarCitaPorCodigoBarras(codigo);
-
-        if (datos != null) {
-            jlblCedula.setText(datos[0]);
-            jlblPacuente.setText(datos[1]);
-            jlblCita.setText(datos[2]);
-            jlblFechaH.setText(datos[3]);
-            jlblEspecialista.setText(datos[4]);
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this, "Ticket no encontrado.");
+        if ("Finalizada".equalsIgnoreCase(this.estadoCitaCargada) || "Finalizado".equalsIgnoreCase(this.estadoCitaCargada)) {
+            JOptionPane.showMessageDialog(this, "❌ Cita Finalizada - Este ticket ya fue atendido por el médico.", "Operación Bloqueada", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        jtxtEscaneo.setText("");
-        jtxtEscaneo.requestFocusInWindow();
-    }
-            private void actualizarEstadoCita() {
-        int idCita;
+        if ("En Proceso".equalsIgnoreCase(this.estadoCitaCargada)) {
+            JOptionPane.showMessageDialog(this, "⚠️ El ticket ya se encuentra en proceso de atención", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Ejecutar la actualización en MySQL de 'Pendiente' a 'En Proceso'
+        ConexionBD conexion = new ConexionBD();
+        Connection cn = conexion.conectar();
+
         try {
-            idCita = Integer.parseInt(jlblCita.getText().trim());
-        } catch (NumberFormatException e) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Primero busque un ticket para seleccionar una cita.");
-            return;
-        }
+            String updateSql = "UPDATE citas SET estado = 'En Proceso' WHERE id_cita = ?";
+            PreparedStatement pstUpdate = cn.prepareStatement(updateSql);
+            pstUpdate.setInt(1, this.idCitaCargada);
+            int filasModificadas = pstUpdate.executeUpdate();
+            pstUpdate.close();
+            cn.close();
 
-        dao.CitaDAO citaDAO = new dao.CitaDAO();
-        String estado = citaDAO.obtenerEstadoCita(idCita);
+            if (filasModificadas > 0) {
+                this.estadoCitaCargada = "En Proceso";
+                jbtnIngresar.setEnabled(false);
+                jLabel3.setText("✅ ¡Llegada confirmada! Estado actualizado a: EN PROCESO");
+                jLabel3.setForeground(UIClinico.COLOR_EXITO);
 
-        if (estado == null) {
-            javax.swing.JOptionPane.showMessageDialog(this, "No se encontró la cita.");
-            return;
-        }
+                JOptionPane.showMessageDialog(this, 
+                    "✅ ¡Paciente ingresado a la cita con éxito!\nEstado actualizado a: EN PROCESO\nEl médico ya puede visualizarlo en su agenda.", 
+                    "Llegada Confirmada", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo actualizar el estado de la cita.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
 
-        if (estado.equals("En Proceso")) {
-            javax.swing.JOptionPane.showMessageDialog(this, "⚠️ Esta cita ya está En Proceso.", "Aviso", javax.swing.JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (!estado.equals("Pendiente")) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Esta cita no se puede ingresar. Estado actual: " + estado, "Aviso", javax.swing.JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (citaDAO.actualizarEstadoCita(idCita, "En Proceso")) {
-            javax.swing.JOptionPane.showMessageDialog(this, "✅ La cita ahora está En Proceso.");
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this, "No se pudo actualizar la cita.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar la llegada del paciente: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
@@ -268,13 +305,6 @@ public class VistaRecepcion extends javax.swing.JFrame {
                 .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 215, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(90, 90, 90))
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(17, 17, 17)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 337, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(20, Short.MAX_VALUE))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jbtnVolver)
-                .addGap(0, 0, Short.MAX_VALUE))
-            .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(129, 129, 129)
                 .addComponent(jbtnValidar)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -282,6 +312,12 @@ public class VistaRecepcion extends javax.swing.JFrame {
                 .addGap(63, 63, 63)
                 .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(17, 17, 17)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jbtnVolver)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 337, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(20, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -296,9 +332,9 @@ public class VistaRecepcion extends javax.swing.JFrame {
                 .addComponent(jLabel3)
                 .addGap(18, 18, 18)
                 .addComponent(jbtnValidar)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 40, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 45, Short.MAX_VALUE)
                 .addComponent(jbtnVolver)
-                .addContainerGap())
+                .addGap(19, 19, 19))
         );
 
         JPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
@@ -334,16 +370,17 @@ public class VistaRecepcion extends javax.swing.JFrame {
                         .addComponent(jbtnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(JPanel2Layout.createSequentialGroup()
                         .addGap(60, 60, 60)
-                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(JPanel2Layout.createSequentialGroup()
-                        .addGap(42, 42, 42)
-                        .addGroup(JPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jlblPacuente, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jlblCedula, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jlblCita, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jlblFechaH, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jlblEspecialista, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(147, Short.MAX_VALUE))
+            .addGroup(JPanel2Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addGroup(JPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jlblEspecialista, javax.swing.GroupLayout.PREFERRED_SIZE, 302, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jlblFechaH, javax.swing.GroupLayout.PREFERRED_SIZE, 302, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jlblCita, javax.swing.GroupLayout.PREFERRED_SIZE, 302, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jlblPacuente, javax.swing.GroupLayout.PREFERRED_SIZE, 302, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jlblCedula, javax.swing.GroupLayout.PREFERRED_SIZE, 304, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         JPanel2Layout.setVerticalGroup(
             JPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -372,9 +409,9 @@ public class VistaRecepcion extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(15, 15, 15)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(26, 26, 26)
+                .addGap(18, 18, 18)
                 .addComponent(JPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(26, Short.MAX_VALUE))
+                .addContainerGap(75, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -383,49 +420,43 @@ public class VistaRecepcion extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(JPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(0, 25, Short.MAX_VALUE))
+                .addGap(0, 71, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void jtxtEscaneoKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtxtEscaneoKeyPressed
-        // TODO add your handling code here:
+        // El lector láser envía automáticamente Enter al final del escaneo
         if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-            validarAsistenciaTicket();
+            buscarYMostrarTicket();
         }
     }//GEN-LAST:event_jtxtEscaneoKeyPressed
 
     private void jbtnVolverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnVolverActionPerformed
-        // TODO add your handling code here:
         MenuPrincipal menu = new MenuPrincipal();
         menu.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jbtnVolverActionPerformed
 
     private void jtxtEscaneoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jtxtEscaneoActionPerformed
-        // TODO add your handling code here:
+        buscarYMostrarTicket();
     }//GEN-LAST:event_jtxtEscaneoActionPerformed
 
     private void jbtnValidarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnValidarActionPerformed
-        // TODO add your handling code here:
-        buscarTicketPorCodigo();
+        // Búsqueda manual al presionar el botón "Validar Ticket"
+        buscarYMostrarTicket();
     }//GEN-LAST:event_jbtnValidarActionPerformed
 
     private void jbtnIngresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnIngresarActionPerformed
-        // TODO add your handling code here:
-        actualizarEstadoCita();
+        // Acción explícita para cambiar el estado de 'Pendiente' a 'En Proceso'
+        ingresarPacienteACita();
     }//GEN-LAST:event_jbtnIngresarActionPerformed
 
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -433,18 +464,10 @@ public class VistaRecepcion extends javax.swing.JFrame {
                     break;
                 }
             }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(VistaRecepcion.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(VistaRecepcion.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(VistaRecepcion.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(VistaRecepcion.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
 
-        /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new VistaRecepcion().setVisible(true);

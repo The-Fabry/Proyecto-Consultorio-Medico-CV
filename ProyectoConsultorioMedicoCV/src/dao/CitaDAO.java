@@ -354,8 +354,73 @@ public class CitaDAO {
             ps.setString(4, cedula.trim());
             ps.setString(5, diagnostico.trim());
             ps.setString(6, notas == null ? "" : notas.trim());
-            return ps.executeUpdate() > 0;
+            boolean exito = ps.executeUpdate() > 0;
+            if (exito) {
+                // Al registrar diagnóstico y notas, la cita pasa automáticamente a estado 'Finalizada'
+                actualizarEstadoCita(idCita, "Finalizada");
+            }
+            return exito;
         }
+    }
+
+    // Obtener el ID del especialista según el nombre de usuario logueado en sesión
+    public int obtenerIdEspecialistaPorUsuario(String usuario) {
+        int idEspecialista = 1; // Fallback seguro
+        if (usuario == null || usuario.trim().isEmpty()) {
+            return idEspecialista;
+        }
+
+        try (Connection cn = new ConexionBD().conectar()) {
+            // 1. Buscar si en especialistas coincide con el nombre del usuario
+            String sqlNombre = "SELECT id_especialista FROM especialistas WHERE LOWER(nombre_completo) LIKE LOWER(?) LIMIT 1";
+            try (PreparedStatement ps = cn.prepareStatement(sqlNombre)) {
+                ps.setString(1, "%" + usuario.trim() + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt("id_especialista");
+                    }
+                }
+            }
+
+            // 2. Buscar si la cédula del usuario coincide en especialistas
+            String sqlUsuario = "SELECT cedula FROM usuarios WHERE usuario = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sqlUsuario)) {
+                ps.setString(1, usuario.trim());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String cedula = rs.getString("cedula");
+                        if (cedula != null && !cedula.trim().isEmpty()) {
+                            try (PreparedStatement psEsp = cn.prepareStatement("SELECT id_especialista FROM especialistas WHERE cedula = ? LIMIT 1")) {
+                                psEsp.setString(1, cedula.trim());
+                                try (ResultSet rsEsp = psEsp.executeQuery()) {
+                                    if (rsEsp.next()) {
+                                        return rsEsp.getInt("id_especialista");
+                                    }
+                                }
+                            } catch (SQLException ignored) {}
+                        }
+                    }
+                }
+            }
+        } catch (SQLException ignored) {}
+
+        return idEspecialista;
+    }
+
+    // Obtener el nombre y especialidad por ID
+    public String obtenerNombreEspecialista(int idEspecialista) {
+        String nombre = "Médico Especialista";
+        String sql = "SELECT nombre_completo, especialidad FROM especialistas WHERE id_especialista = ?";
+        try (Connection cn = new ConexionBD().conectar();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, idEspecialista);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    nombre = rs.getString("nombre_completo") + " (" + rs.getString("especialidad") + ")";
+                }
+            }
+        } catch (SQLException ignored) {}
+        return nombre;
     }
 
     // =============================================================

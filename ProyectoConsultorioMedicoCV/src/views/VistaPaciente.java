@@ -233,15 +233,61 @@ public class VistaPaciente extends javax.swing.JFrame {
         String nombre = jtxtNombre.getText().trim();
         String telefono = jtxtTelefono.getText().trim();
         String fechaHora = jtxtFecha.getText().trim();
+        int indexSeleccionado = jcbxEspecialista.getSelectedIndex();
 
-        if (cedula.isEmpty() || nombre.isEmpty() || telefono.isEmpty() || fechaHora.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor complete todos los campos y seleccione la fecha/hora.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
+        // =============================================================
+        // 1. CAMPOS OBLIGATORIOS (Que ninguno esté vacío)
+        // =============================================================
+        if (cedula.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "El campo 'Cédula' es obligatorio. Por favor ingréselo.", "Campo Vacío", JOptionPane.WARNING_MESSAGE);
+            jtxtCedula.requestFocus();
+            return;
+        }
+        if (nombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "El campo 'Nombre' es obligatorio. Por favor ingréselo.", "Campo Vacío", JOptionPane.WARNING_MESSAGE);
+            jtxtNombre.requestFocus();
+            return;
+        }
+        if (telefono.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "El campo 'Teléfono' es obligatorio. Por favor ingréselo.", "Campo Vacío", JOptionPane.WARNING_MESSAGE);
+            jtxtTelefono.requestFocus();
+            return;
+        }
+        if (indexSeleccionado < 0) {
+            JOptionPane.showMessageDialog(this, "Debe seleccionar un especialista médico.", "Campo Vacío", JOptionPane.WARNING_MESSAGE);
+            jcbxEspecialista.requestFocus();
+            return;
+        }
+        if (fechaHora.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe seleccionar la Fecha y Hora de la cita con el botón 'Elegir Fecha/Hora'.", "Campo Vacío", JOptionPane.WARNING_MESSAGE);
+            jbtnElegirF.requestFocus();
             return;
         }
 
-        int indexSeleccionado = jcbxEspecialista.getSelectedIndex();
-        if (indexSeleccionado < 0) {
-            JOptionPane.showMessageDialog(this, "Debe seleccionar un especialista.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        // =============================================================
+        // 2. VALIDACIÓN DE LA CÉDULA (Exactamente 10 dígitos numéricos)
+        // =============================================================
+        if (!cedula.matches("^[0-9]{10}$")) {
+            JOptionPane.showMessageDialog(this, "La cédula debe contener exactamente 10 dígitos numéricos.", "Error en Cédula", JOptionPane.ERROR_MESSAGE);
+            jtxtCedula.requestFocus();
+            return;
+        }
+
+        // =============================================================
+        // 3. VALIDACIÓN DEL NOMBRE (Únicamente letras y espacios)
+        // =============================================================
+        if (!nombre.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$")) {
+            JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras.", "Error en Nombre", JOptionPane.ERROR_MESSAGE);
+            jtxtNombre.requestFocus();
+            return;
+        }
+
+        // =============================================================
+        // 4. VALIDACIÓN DEL TELÉFONO (Exactamente 10 dígitos numéricos)
+        // =============================================================
+        if (!telefono.matches("^[0-9]{10}$")) {
+            JOptionPane.showMessageDialog(this, "El teléfono debe contener exactamente 10 dígitos numéricos.", "Error en Teléfono", JOptionPane.ERROR_MESSAGE);
+            jtxtTelefono.requestFocus();
             return;
         }
 
@@ -401,14 +447,14 @@ public class VistaPaciente extends javax.swing.JFrame {
                                     .addComponent(jtbnVolver, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE))))))
                 .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jbtnVerTicketLayout.createSequentialGroup()
-                        .addGap(113, 113, 113)
-                        .addComponent(jButton1))
-                    .addGroup(jbtnVerTicketLayout.createSequentialGroup()
                         .addGap(101, 101, 101)
                         .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 205, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jbtnVerTicketLayout.createSequentialGroup()
                         .addGap(76, 76, 76)
-                        .addComponent(jcbxMisCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 248, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jcbxMisCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 248, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jbtnVerTicketLayout.createSequentialGroup()
+                        .addGap(130, 130, 130)
+                        .addComponent(jButton1)))
                 .addContainerGap(146, Short.MAX_VALUE))
         );
         jbtnVerTicketLayout.setVerticalGroup(
@@ -431,31 +477,26 @@ public class VistaPaciente extends javax.swing.JFrame {
                         .addComponent(jLabel7)
                         .addGap(18, 18, 18)
                         .addComponent(jcbxMisCitas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(jbtnVerTicketLayout.createSequentialGroup()
-                        .addGap(15, 15, 15)
-                        .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel4)
-                            .addComponent(jtxtTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel5)
-                            .addComponent(jcbxEspecialista, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel6)
-                            .addComponent(jtxtFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addComponent(jbtnElegirF)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 23, Short.MAX_VALUE))
-                    .addGroup(jbtnVerTicketLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton1)
-                        .addGap(4, 4, 4)))
+                .addGap(15, 15, 15)
                 .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(jtxtTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(jcbxEspecialista, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jtxtFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addComponent(jbtnElegirF)
+                .addGap(29, 29, 29)
+                .addGroup(jbtnVerTicketLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jtbnVolver)
                     .addComponent(jtbnGuardar)
-                    .addComponent(jtbnVolver))
-                .addGap(29, 29, 29))
+                    .addComponent(jButton1))
+                .addContainerGap(59, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());

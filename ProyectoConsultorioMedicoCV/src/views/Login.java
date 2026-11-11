@@ -83,17 +83,18 @@ public class Login extends javax.swing.JFrame {
     private void abrirVistaPorRol(String usuario, String rol) {
         switch (rol.toLowerCase().trim()) {
             case "paciente":
-                // ⭐ CLAVE: Guardamos el usuario en la sesión para que VistaPaciente cargue todo en automático ⭐
                 Sesion.setUsuarioLogueado(usuario);
                 new VistaPaciente().setVisible(true);
                 break;
 
             case "medico":
+                Sesion.setUsuarioLogueado(usuario);
                 new VistaMedico().setVisible(true);
                 break;
 
             case "recepcion":
             case "recepcionista":
+                Sesion.setUsuarioLogueado(usuario);
                 new VistaRecepcion().setVisible(true);
                 break;
 
@@ -183,9 +184,9 @@ public class Login extends javax.swing.JFrame {
                                     .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGap(44, 44, 44)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jtxtUsuario)
-                                    .addComponent(jtxtContraseña, javax.swing.GroupLayout.DEFAULT_SIZE, 143, Short.MAX_VALUE))))))
-                .addContainerGap(95, Short.MAX_VALUE))
+                                    .addComponent(jtxtUsuario, javax.swing.GroupLayout.DEFAULT_SIZE, 201, Short.MAX_VALUE)
+                                    .addComponent(jtxtContraseña))))))
+                .addContainerGap(160, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -209,7 +210,9 @@ public class Login extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)

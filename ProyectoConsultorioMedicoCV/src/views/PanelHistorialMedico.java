@@ -275,36 +275,53 @@ public class PanelHistorialMedico extends JPanel {
             guardarDiagnostico()
         );
 
-        // Seleccionar una cita desde la tabla
+        // Seleccionar una cita desde la tabla de historial previo
         tblHistorial.getSelectionModel()
             .addListSelectionListener(e -> {
+                if (!e.getValueIsAdjusting() && tblHistorial.getSelectedRow() >= 0) {
+                    int fila = tblHistorial.convertRowIndexToModel(tblHistorial.getSelectedRow());
+                    if (fila >= 0) {
+                        int idCita = ((Number) modelo.getValueAt(fila, 0)).intValue();
+                        Object diag = modelo.getValueAt(fila, 3);
+                        Object notas = modelo.getValueAt(fila, 4);
 
-                if (!e.getValueIsAdjusting()
-                        && tblHistorial.getSelectedRow() >= 0) {
+                        // Mostrar directamente el diagnóstico y notas históricas en pantalla
+                        txtDiagnostico.setText(diag != null ? diag.toString() : "");
+                        txtNotas.setText(notas != null ? notas.toString() : "");
 
-                    int fila =
-                        tblHistorial.convertRowIndexToModel(
-                            tblHistorial.getSelectedRow()
-                        );
-
-                    int idCita = ((Number)
-                        modelo.getValueAt(fila, 0)
-                    ).intValue();
-
-                    for (int i = 0;
-                         i < cmbCitas.getItemCount(); i++) {
-
-                        if (cmbCitas.getItemAt(i).id == idCita) {
-
-                            cmbCitas.setSelectedIndex(i);
-
-                            mostrarDiagnosticoDeCita();
-
-                            break;
+                        // Sincronizar el combo de citas
+                        for (int i = 0; i < cmbCitas.getItemCount(); i++) {
+                            if (cmbCitas.getItemAt(i).id == idCita) {
+                                cmbCitas.setSelectedIndex(i);
+                                break;
+                            }
                         }
                     }
                 }
             });
+    }
+
+    /**
+     * Permite a VistaMedico cargar los datos del paciente automáticamente al seleccionar una cita.
+     */
+    public void cargarPacientePorCedula(String cedula) {
+        if (cedula != null && !cedula.trim().isEmpty()) {
+            txtCedula.setText(cedula.trim());
+            consultarHistorialPaciente();
+        }
+    }
+
+    /**
+     * Selecciona la cita específica en el selector del formulario.
+     */
+    public void seleccionarCitaPorId(int idCita) {
+        for (int i = 0; i < cmbCitas.getItemCount(); i++) {
+            if (cmbCitas.getItemAt(i).id == idCita) {
+                cmbCitas.setSelectedIndex(i);
+                mostrarDiagnosticoDeCita();
+                break;
+            }
+        }
     }
 
     // ========================================
@@ -537,9 +554,15 @@ public class PanelHistorialMedico extends JPanel {
 
             mostrarDiagnosticoDeCita();
 
+            // Refrescar automáticamente la tabla de agenda en VistaMedico si está incrustado
+            java.awt.Window ventanaPadre = SwingUtilities.getWindowAncestor(this);
+            if (ventanaPadre instanceof VistaMedico) {
+                ((VistaMedico) ventanaPadre).cargarAgendaMedico();
+            }
+
             JOptionPane.showMessageDialog(
                 this,
-                "Diagnostico y notas guardados."
+                "Diagnóstico y notas guardados con éxito. Cita marcada como 'Finalizada'."
             );
 
         } catch (SQLException ex) {
