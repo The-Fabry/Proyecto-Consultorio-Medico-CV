@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" 
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" 
+              name="reporte_citas_rango" 
+              language="java" 
+              pageWidth="595" 
+              pageHeight="842" 
+              columnWidth="555" 
+              leftMargin="20" 
+              rightMargin="20" 
+              topMargin="20" 
+              bottomMargin="20" 
+              uuid="11d423d4-e547-4c7d-9556-8880ecdaeff3">
+	<property name="ireport.zoom" value="1.2"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="FECHA_INICIO" class="java.lang.String">
+		<defaultValueExpression><![CDATA["2026-01-01 00:00:00"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="FECHA_FIN" class="java.lang.String">
+		<defaultValueExpression><![CDATA["2026-12-31 23:59:59"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT 
+    c.id_cita,
+    cl.nombre AS paciente,
+    cl.cedula,
+    e.nombre_completo AS medico,
+    e.especialidad,
+    c.fecha_cita,
+    c.codigo_barras,
+    c.estado
+FROM citas c
+JOIN clientes cl ON c.id_cliente = cl.id_cliente
+JOIN especialistas e ON c.id_especialista = e.id_especialista
+WHERE c.fecha_cita >= $P{FECHA_INICIO} AND c.fecha_cita <= $P{FECHA_FIN}
+ORDER BY c.fecha_cita ASC;]]>
+	</queryString>
+	<field name="id_cita" class="java.lang.Integer"/>
+	<field name="paciente" class="java.lang.String"/>
+	<field name="cedula" class="java.lang.String"/>
+	<field name="medico" class="java.lang.String"/>
+	<field name="especialidad" class="java.lang.String"/>
+	<field name="fecha_cita" class="java.lang.Object"/>
+	<field name="codigo_barras" class="java.lang.String"/>
+	<field name="estado" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="80" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="74" backcolor="#0F4C81" uuid="8a61427a-8f0a-4a25-a1c1-4c759550b2d1"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="15" y="8" width="350" height="24" forecolor="#FFFFFF" uuid="9b61427a-8f0a-4a25-a1c1-4c759550b2d2"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SMARTMED - CONSULTORIO MÉDICO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="15" y="32" width="350" height="18" forecolor="#93C5FD" uuid="ab61427a-8f0a-4a25-a1c1-4c759550b2d3"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="11" isBold="false" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Reporte de Citas Médicas por Rango de Fechas]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="15" y="52" width="400" height="16" forecolor="#E2E8F0" uuid="bb61427a-8f0a-4a25-a1c1-4c759550b2d4"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Período: " + $P{FECHA_INICIO} + "  hasta  " + $P{FECHA_FIN}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement x="375" y="10" width="165" height="20" forecolor="#FFFFFF" uuid="cb61427a-8f0a-4a25-a1c1-4c759550b2d5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Emisión: " + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="8" splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="24" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="24" backcolor="#0284C7" uuid="db61427a-8f0a-4a25-a1c1-4c759550b2d6"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="0" width="40" height="24" forecolor="#FFFFFF" uuid="eb61427a-8f0a-4a25-a1c1-4c759550b2d7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[# Cita]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="40" y="0" width="120" height="24" forecolor="#FFFFFF" uuid="fb61427a-8f0a-4a25-a1c1-4c759550b2d8"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Paciente]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="160" y="0" width="70" height="24" forecolor="#FFFFFF" uuid="0c61427a-8f0a-4a25-a1c1-4c759550b2d9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cédula]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="230" y="0" width="130" height="24" forecolor="#FFFFFF" uuid="1c61427a-8f0a-4a25-a1c1-4c759550b2da"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Especialista]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="360" y="0" width="110" height="24" forecolor="#FFFFFF" uuid="2c61427a-8f0a-4a25-a1c1-4c759550b2db"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fecha / Hora]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="470" y="0" width="85" height="24" forecolor="#FFFFFF" uuid="3c61427a-8f0a-4a25-a1c1-4c759550b2dc"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Estado]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="40" height="20" uuid="4c61427a-8f0a-4a25-a1c1-4c759550b2dd"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[String.valueOf($F{id_cita})]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="40" y="0" width="120" height="20" uuid="5c61427a-8f0a-4a25-a1c1-4c759550b2de"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $F{paciente}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="160" y="0" width="70" height="20" uuid="6c61427a-8f0a-4a25-a1c1-4c759550b2df"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cedula}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="230" y="0" width="130" height="20" uuid="7c61427a-8f0a-4a25-a1c1-4c759550b2e0"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $F{medico} + " (" + $F{especialidad} + ")"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="360" y="0" width="110" height="20" uuid="8c61427a-8f0a-4a25-a1c1-4c759550b2e1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["" + $F{fecha_cita}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="470" y="0" width="85" height="20" uuid="9c61427a-8f0a-4a25-a1c1-4c759550b2e2"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{estado}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="21" width="555" height="1" forecolor="#E2E8F0" uuid="ac61427a-8f0a-4a25-a1c1-4c759550b2e3"/>
+			</line>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="28" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="2" width="555" height="1" forecolor="#CBD5E1" uuid="bc61427a-8f0a-4a25-a1c1-4c759550b2e4"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="6" width="300" height="20" forecolor="#64748B" uuid="cc61427a-8f0a-4a25-a1c1-4c759550b2e5"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<text><![CDATA[SmartMed - Sistema de Gestión de Consultorio Médico]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="435" y="6" width="120" height="20" forecolor="#64748B" uuid="dc61427a-8f0a-4a25-a1c1-4c759550b2e6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

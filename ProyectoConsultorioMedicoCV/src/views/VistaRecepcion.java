@@ -27,8 +27,47 @@ public class VistaRecepcion extends javax.swing.JFrame {
         initComponents();
         this.setLocationRelativeTo(null); // Centrar ventana
         aplicarEstilosClinicos();
+        agregarMenuReportes();
         limpiarFichaDetalle();
         jtxtEscaneo.requestFocus(); // Pone el cursor parpadeando listo para el escáner
+    }
+
+    private void agregarMenuReportes() {
+        javax.swing.JMenuBar menuBar = new javax.swing.JMenuBar();
+        javax.swing.JMenu menuReportes = new javax.swing.JMenu("📊 Reportes");
+        menuReportes.setFont(UIClinico.FONT_SUBTITULO);
+
+        javax.swing.JMenuItem itemGeneral = new javax.swing.JMenuItem("📅 Reporte General de Citas");
+        itemGeneral.setFont(UIClinico.FONT_REGULAR);
+        itemGeneral.addActionListener(e -> reportes.GestorReportes.abrirReporteCitasGeneral(this));
+
+        javax.swing.JMenuItem itemRango = new javax.swing.JMenuItem("⏱️ Reporte de Citas por Rango de Fechas");
+        itemRango.setFont(UIClinico.FONT_REGULAR);
+        itemRango.addActionListener(e -> solicitarRangoFechasYReportar());
+
+        menuReportes.add(itemGeneral);
+        menuReportes.add(itemRango);
+        menuBar.add(menuReportes);
+        this.setJMenuBar(menuBar);
+    }
+
+    private void solicitarRangoFechasYReportar() {
+        javax.swing.JTextField txtInicio = new javax.swing.JTextField(java.time.LocalDate.now().toString() + " 00:00:00");
+        javax.swing.JTextField txtFin = new javax.swing.JTextField(java.time.LocalDate.now().plusMonths(1).toString() + " 23:59:59");
+
+        Object[] formulario = {
+            "Fecha Inicio (YYYY-MM-DD HH:mm:ss):", txtInicio,
+            "Fecha Fin (YYYY-MM-DD HH:mm:ss):", txtFin
+        };
+
+        int res = JOptionPane.showConfirmDialog(this, formulario, "Filtro de Reporte por Fechas", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (res == JOptionPane.OK_OPTION) {
+            String ini = txtInicio.getText().trim();
+            String fin = txtFin.getText().trim();
+            if (!ini.isEmpty() && !fin.isEmpty()) {
+                reportes.GestorReportes.abrirReporteCitasPorRango(this, ini, fin);
+            }
+        }
     }
 
     private void aplicarEstilosClinicos() {

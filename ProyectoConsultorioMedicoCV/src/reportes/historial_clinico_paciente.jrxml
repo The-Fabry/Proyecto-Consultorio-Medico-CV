@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" 
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" 
+              name="historial_clinico_paciente" 
+              language="java" 
+              pageWidth="595" 
+              pageHeight="842" 
+              columnWidth="555" 
+              leftMargin="20" 
+              rightMargin="20" 
+              topMargin="20" 
+              bottomMargin="20" 
+              uuid="0c07630c-90eb-4af5-a009-ed8e5bb1c5a8">
+	<property name="ireport.zoom" value="1.2"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="CEDULA_PACIENTE" class="java.lang.String">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT 
+    h.id_historial,
+    c.id_cita,
+    cl.nombre AS paciente,
+    cl.cedula,
+    e.nombre_completo AS medico,
+    e.especialidad,
+    c.fecha_cita,
+    h.fecha_registro,
+    h.diagnostico,
+    h.notas
+FROM historial_clinico h
+JOIN citas c ON h.id_cita = c.id_cita
+JOIN clientes cl ON c.id_cliente = cl.id_cliente
+JOIN especialistas e ON c.id_especialista = e.id_especialista
+WHERE ($P{CEDULA_PACIENTE} IS NULL OR $P{CEDULA_PACIENTE} = '' OR cl.cedula = $P{CEDULA_PACIENTE})
+ORDER BY h.fecha_registro DESC;]]>
+	</queryString>
+	<field name="id_historial" class="java.lang.Integer"/>
+	<field name="id_cita" class="java.lang.Integer"/>
+	<field name="paciente" class="java.lang.String"/>
+	<field name="cedula" class="java.lang.String"/>
+	<field name="medico" class="java.lang.String"/>
+	<field name="especialidad" class="java.lang.String"/>
+	<field name="fecha_cita" class="java.lang.Object"/>
+	<field name="fecha_registro" class="java.lang.Object"/>
+	<field name="diagnostico" class="java.lang.String"/>
+	<field name="notas" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="80" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="74" backcolor="#0F4C81" uuid="8a61427a-8f0a-4a25-a1c1-4c759550b3d1"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="15" y="8" width="350" height="24" forecolor="#FFFFFF" uuid="9b61427a-8f0a-4a25-a1c1-4c759550b3d2"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SMARTMED - HISTORIAL CLÍNICO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="15" y="32" width="350" height="18" forecolor="#93C5FD" uuid="ab61427a-8f0a-4a25-a1c1-4c759550b3d3"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="11" isBold="false" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Ficha Médica de Consultas, Diagnósticos y Evolución]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="15" y="52" width="350" height="16" forecolor="#E2E8F0" uuid="bb61427a-8f0a-4a25-a1c1-4c759550b3d4"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{CEDULA_PACIENTE} != null && !$P{CEDULA_PACIENTE}.isEmpty()) ? "Filtro por Cédula: " + $P{CEDULA_PACIENTE} : "Historial Completo de Pacientes"]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement x="375" y="10" width="165" height="20" forecolor="#FFFFFF" uuid="cb61427a-8f0a-4a25-a1c1-4c759550b3d5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Emisión: " + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="8" splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="24" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="24" backcolor="#0284C7" uuid="db61427a-8f0a-4a25-a1c1-4c759550b3d6"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="0" width="40" height="24" forecolor="#FFFFFF" uuid="eb61427a-8f0a-4a25-a1c1-4c759550b3d7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[# Hist]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="40" y="0" width="115" height="24" forecolor="#FFFFFF" uuid="fb61427a-8f0a-4a25-a1c1-4c759550b3d8"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Paciente / Cédula]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="155" y="0" width="105" height="24" forecolor="#FFFFFF" uuid="0c61427a-8f0a-4a25-a1c1-4c759550b3d9"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Médico]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="260" y="0" width="75" height="24" forecolor="#FFFFFF" uuid="1c61427a-8f0a-4a25-a1c1-4c759550b3da"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fecha Cita]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="335" y="0" width="110" height="24" forecolor="#FFFFFF" uuid="2c61427a-8f0a-4a25-a1c1-4c759550b3db"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Diagnóstico]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="445" y="0" width="110" height="24" forecolor="#FFFFFF" uuid="3c61427a-8f0a-4a25-a1c1-4c759550b3dc"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ Notas / Tratamiento]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="32" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="2" width="40" height="28" uuid="4c61427a-8f0a-4a25-a1c1-4c759550b3dd"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[String.valueOf($F{id_historial})]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="40" y="2" width="115" height="28" uuid="5c61427a-8f0a-4a25-a1c1-4c759550b3de"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $F{paciente} + "\n CI: " + $F{cedula}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="155" y="2" width="105" height="28" uuid="6c61427a-8f0a-4a25-a1c1-4c759550b3df"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $F{medico} + "\n " + $F{especialidad}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="260" y="2" width="75" height="28" uuid="7c61427a-8f0a-4a25-a1c1-4c759550b3e0"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["" + $F{fecha_cita}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="335" y="2" width="110" height="28" uuid="8c61427a-8f0a-4a25-a1c1-4c759550b3e1"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + ($F{diagnostico} == null ? "Sin diagnóstico" : $F{diagnostico})]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="445" y="2" width="110" height="28" uuid="9c61427a-8f0a-4a25-a1c1-4c759550b3e2"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + ($F{notas} == null ? "" : $F{notas})]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="31" width="555" height="1" forecolor="#E2E8F0" uuid="ac61427a-8f0a-4a25-a1c1-4c759550b3e3"/>
+			</line>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="28" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="2" width="555" height="1" forecolor="#CBD5E1" uuid="bc61427a-8f0a-4a25-a1c1-4c759550b3e4"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="6" width="300" height="20" forecolor="#64748B" uuid="cc61427a-8f0a-4a25-a1c1-4c759550b3e5"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<text><![CDATA[SmartMed - Historial Médico Confidencial]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="435" y="6" width="120" height="20" forecolor="#64748B" uuid="dc61427a-8f0a-4a25-a1c1-4c759550b3e6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Segoe UI" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

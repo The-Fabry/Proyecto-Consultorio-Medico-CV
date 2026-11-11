@@ -20,8 +20,41 @@ public class VistaMedico extends javax.swing.JFrame {
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         aplicarEstilosClinicos();
+        agregarMenuReportes();
         cargarAgendaMedico();
         configurarEventos();
+    }
+
+    private void agregarMenuReportes() {
+        javax.swing.JMenuBar menuBar = new javax.swing.JMenuBar();
+        javax.swing.JMenu menuReportes = new javax.swing.JMenu("📊 Reportes Clínicos");
+        menuReportes.setFont(UIClinico.FONT_SUBTITULO);
+
+        javax.swing.JMenuItem itemHistorialPaciente = new javax.swing.JMenuItem("📋 Historial del Paciente Seleccionado");
+        itemHistorialPaciente.setFont(UIClinico.FONT_REGULAR);
+        itemHistorialPaciente.addActionListener(e -> {
+            int fila = jTable1.getSelectedRow();
+            String cedula = "";
+            if (fila >= 0) {
+                cedula = jTable1.getValueAt(fila, 3).toString().trim();
+            }
+            reportes.GestorReportes.abrirHistorialClinico(this, cedula);
+        });
+
+        javax.swing.JMenuItem itemHistorialTodos = new javax.swing.JMenuItem("📑 Historial Clínico Completo (Todos)");
+        itemHistorialTodos.setFont(UIClinico.FONT_REGULAR);
+        itemHistorialTodos.addActionListener(e -> reportes.GestorReportes.abrirHistorialClinico(this, ""));
+
+        javax.swing.JMenuItem itemAgenda = new javax.swing.JMenuItem("📅 Reporte General de Agenda de Citas");
+        itemAgenda.setFont(UIClinico.FONT_REGULAR);
+        itemAgenda.addActionListener(e -> reportes.GestorReportes.abrirReporteCitasGeneral(this));
+
+        menuReportes.add(itemHistorialPaciente);
+        menuReportes.add(itemHistorialTodos);
+        menuReportes.addSeparator();
+        menuReportes.add(itemAgenda);
+        menuBar.add(menuReportes);
+        this.setJMenuBar(menuBar);
     }
 
     private void aplicarEstilosClinicos() {
