@@ -21,6 +21,7 @@ public class VistaPaciente extends javax.swing.JFrame {
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         aplicarEstilosClinicos();
+        configurarFiltrosTiempoReal();
         cargarEspecialistas();
         jtxtFecha.setEditable(false);
         
@@ -67,6 +68,87 @@ public class VistaPaciente extends javax.swing.JFrame {
         UIClinico.estilizarCampoTexto(jtxtFecha);
         UIClinico.estilizarCombo(jcbxEspecialista);
         UIClinico.estilizarCombo(jcbxMisCitas);
+    }
+
+    /**
+     * REQUERIMIENTO 1: Filtros estrictos en tiempo real para las cajas de texto.
+     * Bloquea caracteres no permitidos y restringe la longitud a nivel de documento.
+     */
+    private void configurarFiltrosTiempoReal() {
+        // 1. CÉDULA: Exclusivamente números, máximo 10 dígitos
+        ((javax.swing.text.AbstractDocument) jtxtCedula.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs) throws javax.swing.text.BadLocationException {
+                if (text == null) return;
+                String actual = fb.getDocument().getText(0, fb.getDocument().getLength());
+                StringBuilder sb = new StringBuilder(actual);
+                sb.replace(offset, offset + length, text);
+                if (sb.toString().matches("^[0-9]{0,10}$")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
+                if (string == null) return;
+                String actual = fb.getDocument().getText(0, fb.getDocument().getLength());
+                StringBuilder sb = new StringBuilder(actual);
+                sb.insert(offset, string);
+                if (sb.toString().matches("^[0-9]{0,10}$")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // 2. NOMBRE: Exclusivamente letras (con tildes y eñes) y espacios
+        ((javax.swing.text.AbstractDocument) jtxtNombre.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs) throws javax.swing.text.BadLocationException {
+                if (text == null) return;
+                String actual = fb.getDocument().getText(0, fb.getDocument().getLength());
+                StringBuilder sb = new StringBuilder(actual);
+                sb.replace(offset, offset + length, text);
+                if (sb.toString().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*$")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
+                if (string == null) return;
+                String actual = fb.getDocument().getText(0, fb.getDocument().getLength());
+                StringBuilder sb = new StringBuilder(actual);
+                sb.insert(offset, string);
+                if (sb.toString().matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*$")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // 3. TELÉFONO: Exclusivamente números, máximo 10 dígitos
+        ((javax.swing.text.AbstractDocument) jtxtTelefono.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs) throws javax.swing.text.BadLocationException {
+                if (text == null) return;
+                String actual = fb.getDocument().getText(0, fb.getDocument().getLength());
+                StringBuilder sb = new StringBuilder(actual);
+                sb.replace(offset, offset + length, text);
+                if (sb.toString().matches("^[0-9]{0,10}$")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
+                if (string == null) return;
+                String actual = fb.getDocument().getText(0, fb.getDocument().getLength());
+                StringBuilder sb = new StringBuilder(actual);
+                sb.insert(offset, string);
+                if (sb.toString().matches("^[0-9]{0,10}$")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
     }
 
     private void cargarDatosDeUsuarioLogueado(String nombreUsuario) {
@@ -183,8 +265,32 @@ public class VistaPaciente extends javax.swing.JFrame {
             String dia = (String) cbDia.getSelectedItem();
             String horaMinuto = (String) cbHorarios.getSelectedItem();
 
-            String fechaHoraFormateada = anio + "-" + mes + "-" + dia + " " + horaMinuto + ":00";
-            jtxtFecha.setText(fechaHoraFormateada);
+            try {
+                int anioInt = Integer.parseInt(anio);
+                int mesInt = cbMes.getSelectedIndex() + 1;
+                int diaInt = Integer.parseInt(dia);
+                String[] partesHora = horaMinuto.split(":");
+                int horaInt = Integer.parseInt(partesHora[0]);
+                int minutoInt = Integer.parseInt(partesHora[1]);
+
+                LocalDateTime fechaSeleccionada = LocalDateTime.of(anioInt, mesInt, diaInt, horaInt, minutoInt);
+                LocalDateTime ahoraMismo = LocalDateTime.now();
+
+                // REQUERIMIENTO 2: Validación estricta contra fechas u horas pasadas
+                if (fechaSeleccionada.toLocalDate().isBefore(ahoraMismo.toLocalDate()) || fechaSeleccionada.isBefore(ahoraMismo)) {
+                    JOptionPane.showMessageDialog(this, 
+                        "⚠️ No se pueden agendar citas en fechas pasadas. Seleccione una fecha válida a partir de hoy.", 
+                        "Fecha Inválida", 
+                        JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                String fechaHoraFormateada = anio + "-" + mes + "-" + dia + " " + horaMinuto + ":00";
+                jtxtFecha.setText(fechaHoraFormateada);
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Formato de fecha u hora no válido.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 

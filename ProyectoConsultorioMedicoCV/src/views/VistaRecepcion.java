@@ -22,6 +22,7 @@ public class VistaRecepcion extends javax.swing.JFrame {
     private int idCitaCargada = -1;
     private String estadoCitaCargada = "";
     private String codigoCitaCargada = "";
+    private boolean busquedaEnProceso = false;
 
     public VistaRecepcion() {
         initComponents();
@@ -118,17 +119,62 @@ public class VistaRecepcion extends javax.swing.JFrame {
     }
 
     /**
-     * REGLA 1 y 3: Captura el código escaneado por el láser o digitado manualmente,
-     * busca la cita en MySQL y rellena automáticamente los campos en pantalla
-     * SIN MODIFICAR EL ESTADO DE LA CITA DE INMEDIATO.
+     * REQUERIMIENTO 3: Procesa la lectura del escáner láser de forma limpia.
+     * Si el lector envía Enter y el campo ya fue procesado o está vacío, no muestra alertas falsas.
      */
-    public void buscarYMostrarTicket() {
-        String codigoLeido = jtxtEscaneo.getText().trim();
-
-        if (codigoLeido.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor escanee con el lector o ingrese un código de ticket.", "Aviso", JOptionPane.WARNING_MESSAGE);
+    public void procesarLecturaLaser() {
+        if (busquedaEnProceso) {
             return;
         }
+        String codigoLeido = jtxtEscaneo.getText().trim();
+        if (codigoLeido.isEmpty()) {
+            return; // No lanza advertencia si el escáner envía Enter con campo vacío
+        }
+        ejecutarBusquedaYMostrar(false);
+    }
+
+    /**
+     * REQUERIMIENTO 3: Búsqueda manual al presionar 'Validar Ticket'.
+     * Solo si el usuario hace clic con el campo vacío se muestra la advertencia.
+     */
+    public void validarTicketManual() {
+        if (busquedaEnProceso) {
+            return;
+        }
+        String codigoLeido = jtxtEscaneo.getText().trim();
+        if (codigoLeido.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor escanee con el lector o ingrese un código de ticket.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            jtxtEscaneo.requestFocus();
+            return;
+        }
+        ejecutarBusquedaYMostrar(true);
+    }
+
+    /**
+     * Método público para compatibilidad externa.
+     */
+    public void buscarYMostrarTicket() {
+        validarTicketManual();
+    }
+
+    /**
+     * Realiza la consulta SQL y el rellenado de campos sin cambiar el estado.
+     */
+    private void ejecutarBusquedaYMostrar(boolean esManual) {
+        if (busquedaEnProceso) {
+            return;
+        }
+
+        String codigoLeido = jtxtEscaneo.getText().trim();
+        if (codigoLeido.isEmpty()) {
+            if (esManual) {
+                JOptionPane.showMessageDialog(this, "Por favor escanee con el lector o ingrese un código de ticket.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                jtxtEscaneo.requestFocus();
+            }
+            return;
+        }
+
+        busquedaEnProceso = true;
 
         // Filtro numérico de apoyo para escáneres láser que leen solo dígitos
         String digitosLeidos = codigoLeido.replaceAll("[^0-9]", "");
@@ -170,7 +216,7 @@ public class VistaRecepcion extends javax.swing.JFrame {
                 jlblFechaH.setText("Fecha/Hora: " + fechaCita);
                 jlblEspecialista.setText("Médico: " + especialista);
 
-                // REGLA 3: Validaciones y advertencias según el estado actual de la cita
+                // Validaciones y advertencias según el estado actual de la cita
                 if ("Finalizada".equalsIgnoreCase(this.estadoCitaCargada) || "Finalizado".equalsIgnoreCase(this.estadoCitaCargada)) {
                     jbtnIngresar.setEnabled(false); // Bloquea la operación
                     jLabel3.setText("❌ Cita Finalizada - Atendida previamente.");
@@ -214,6 +260,8 @@ public class VistaRecepcion extends javax.swing.JFrame {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error al consultar la cita: " + e.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
+        } finally {
+            busquedaEnProceso = false;
         }
     }
 
@@ -468,7 +516,7 @@ public class VistaRecepcion extends javax.swing.JFrame {
     private void jtxtEscaneoKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtxtEscaneoKeyPressed
         // El lector láser envía automáticamente Enter al final del escaneo
         if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-            buscarYMostrarTicket();
+            procesarLecturaLaser();
         }
     }//GEN-LAST:event_jtxtEscaneoKeyPressed
 
@@ -479,12 +527,12 @@ public class VistaRecepcion extends javax.swing.JFrame {
     }//GEN-LAST:event_jbtnVolverActionPerformed
 
     private void jtxtEscaneoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jtxtEscaneoActionPerformed
-        buscarYMostrarTicket();
+        procesarLecturaLaser();
     }//GEN-LAST:event_jtxtEscaneoActionPerformed
 
     private void jbtnValidarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnValidarActionPerformed
         // Búsqueda manual al presionar el botón "Validar Ticket"
-        buscarYMostrarTicket();
+        validarTicketManual();
     }//GEN-LAST:event_jbtnValidarActionPerformed
 
     private void jbtnIngresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnIngresarActionPerformed
