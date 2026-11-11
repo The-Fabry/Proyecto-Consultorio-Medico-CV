@@ -159,6 +159,39 @@ public class VistaRecepcion extends javax.swing.JFrame {
         jtxtEscaneo.setText("");
         jtxtEscaneo.requestFocusInWindow();
     }
+            private void actualizarEstadoCita() {
+        int idCita;
+        try {
+            idCita = Integer.parseInt(jlblCita.getText().trim());
+        } catch (NumberFormatException e) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Primero busque un ticket para seleccionar una cita.");
+            return;
+        }
+
+        dao.CitaDAO citaDAO = new dao.CitaDAO();
+        String estado = citaDAO.obtenerEstadoCita(idCita);
+
+        if (estado == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se encontró la cita.");
+            return;
+        }
+
+        if (estado.equals("En Proceso")) {
+            javax.swing.JOptionPane.showMessageDialog(this, "⚠️ Esta cita ya está En Proceso.", "Aviso", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (!estado.equals("Pendiente")) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Esta cita no se puede ingresar. Estado actual: " + estado, "Aviso", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (citaDAO.actualizarEstadoCita(idCita, "En Proceso")) {
+            javax.swing.JOptionPane.showMessageDialog(this, "✅ La cita ahora está En Proceso.");
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se pudo actualizar la cita.");
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -284,6 +317,11 @@ public class VistaRecepcion extends javax.swing.JFrame {
         jlblEspecialista.setText("Especialista:");
 
         jbtnIngresar.setText("Ingresar a la Cita");
+        jbtnIngresar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnIngresarActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout JPanel2Layout = new javax.swing.GroupLayout(JPanel2);
         JPanel2.setLayout(JPanel2Layout);
@@ -373,6 +411,11 @@ public class VistaRecepcion extends javax.swing.JFrame {
         // TODO add your handling code here:
         buscarTicketPorCodigo();
     }//GEN-LAST:event_jbtnValidarActionPerformed
+
+    private void jbtnIngresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnIngresarActionPerformed
+        // TODO add your handling code here:
+        actualizarEstadoCita();
+    }//GEN-LAST:event_jbtnIngresarActionPerformed
 
     /**
      * @param args the command line arguments
